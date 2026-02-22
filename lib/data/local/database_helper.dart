@@ -159,7 +159,7 @@ class DatabaseHelper{
 
   Future<List<BoardGame>> getAllBoardGames() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('board_games');
+    final List<Map<String, dynamic>> maps = await db.query('board_games', orderBy: 'name ASC');
 
     return List.generate(maps.length, (i) {
       return BoardGame.fromMap(maps[i]);
@@ -274,6 +274,8 @@ class DatabaseHelper{
       sql += ' AND bgg_id IN (SELECT board_game_id FROM board_game_mechanics WHERE mechanic_id IN ($mechanicIds))';
     }
 
+    sql += ' ORDER BY name ASC';
+
     final List<Map<String, dynamic>> maps = await db.rawQuery(sql, args);
 
     return List.generate(maps.length, (i) {
@@ -350,6 +352,7 @@ class DatabaseHelper{
       FROM mechanics m
       JOIN board_game_mechanics bgm ON m.id = bgm.mechanic_id
       WHERE bgm.board_game_id = ?
+      ORDER BY m.name ASC
     ''', [bggId]);
 
     return List.generate(maps.length, (i) {
@@ -365,6 +368,7 @@ class DatabaseHelper{
       JOIN board_game_mechanics bgm ON m.id = bgm.mechanic_id
       JOIN board_games bg ON bgm.board_game_id = bg.bgg_id
       WHERE bg.is_owned = 1
+      ORDER BY m.name ASC
     ''');
     if (maps.isEmpty) {
       return [];
@@ -432,7 +436,10 @@ class DatabaseHelper{
 
   Future<List<BoardGameCategory>> getAllCategories() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('categories');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'categories',
+      orderBy: 'name ASC',
+    );
 
     return List.generate(maps.length, (i) {
       return BoardGameCategory.fromMap(maps[i]);
@@ -479,6 +486,7 @@ class DatabaseHelper{
       FROM categories c
       JOIN board_game_categories bgc ON c.id = bgc.category_id
       WHERE bgc.board_game_id = ?
+      ORDER BY c.name ASC
     ''', [bggId]);
 
     return List.generate(maps.length, (i) {
@@ -494,6 +502,7 @@ class DatabaseHelper{
       JOIN board_game_categories bgc ON c.id = bgc.category_id
       JOIN board_games bg ON bgc.board_game_id = bg.bgg_id
       WHERE bg.is_owned = 1
+      ORDER BY c.name ASC
     ''');
     if (maps.isEmpty) {
       return [];
@@ -608,6 +617,7 @@ class DatabaseHelper{
       FROM expansions e
       JOIN board_game_expansions bge ON e.id = bge.expansion_id
       WHERE bge.board_game_id = ?
+      ORDER BY e.name ASC
     ''', [bggId]);
 
     return List.generate(maps.length, (i) {
