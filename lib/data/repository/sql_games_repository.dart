@@ -59,7 +59,7 @@ class SqlGamesRepository implements GamesRepository {
   @override
   Future<BoardGame> getGameById(int id) async {
     // Intentionally loads categories/mechanics/expansions for single-game reads.
-    var game = await _dbHelper.getBoardGameWitRelationsById(id);
+    var game = await _dbHelper.getBoardGameWithRelationsById(id);
     if (game != null) {
       return game;
     } else {

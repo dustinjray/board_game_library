@@ -138,7 +138,7 @@ void main() {
 
       await repository.insertGameWithRelations(expected);
 
-      final actual = await helper.getBoardGameWitRelationsById(expected.bggId);
+      final actual = await helper.getBoardGameWithRelationsById(expected.bggId);
       expect(actual, isNotNull);
       final actualGame = actual!;
       expect(actualGame.bggId, expected.bggId);
@@ -193,7 +193,7 @@ void main() {
 
       await repository.updateGameWithRelations(updated);
 
-      final actual = await helper.getBoardGameWitRelationsById(updated.bggId);
+      final actual = await helper.getBoardGameWithRelationsById(updated.bggId);
       expect(actual, isNotNull);
       final actualGame = actual!;
       expect(actualGame.name, 'After Relation Update');

@@ -47,7 +47,7 @@ void main() {
 
     await helper.insertBoardGameWithRelations(gameFromXml);
 
-    final inserted = await helper.getBoardGameWitRelationsById(295895);
+    final inserted = await helper.getBoardGameWithRelationsById(295895);
     expect(inserted, isNotNull);
     expect(inserted!.categories, isNotEmpty);
 
@@ -62,7 +62,7 @@ void main() {
 
     await helper.updateBoardGameWithRelations(withAddedCategory);
 
-    final afterAdd = await helper.getBoardGameWitRelationsById(295895);
+    final afterAdd = await helper.getBoardGameWithRelationsById(295895);
     expect(afterAdd, isNotNull);
     expect(afterAdd!.name, '${gameFromXml.name} (Updated)');
     expect(afterAdd.categories.any((c) => c.id == testCategoryId), isTrue);
@@ -73,7 +73,7 @@ void main() {
 
     await helper.updateBoardGameWithRelations(withRemovedCategory);
 
-    final afterRemove = await helper.getBoardGameWitRelationsById(295895);
+    final afterRemove = await helper.getBoardGameWithRelationsById(295895);
     expect(afterRemove, isNotNull);
     expect(afterRemove!.categories.any((c) => c.id == testCategoryId), isFalse);
 
@@ -126,7 +126,7 @@ void main() {
 
     await helper.updateBoardGameWithRelations(updatedGame);
 
-    final afterFirstUpdate = await helper.getBoardGameWitRelationsById(295895);
+    final afterFirstUpdate = await helper.getBoardGameWithRelationsById(295895);
     expect(afterFirstUpdate, isNotNull);
     expect(afterFirstUpdate!.mechanics.any((mechanic) => mechanic.id == addedMechanicId), isTrue);
     expect(afterFirstUpdate.mechanics.any((mechanic) => mechanic.id == removedOriginalMechanicId), isFalse);
@@ -140,7 +140,7 @@ void main() {
 
     await helper.updateBoardGameWithRelations(restoredGame);
 
-    final afterSecondUpdate = await helper.getBoardGameWitRelationsById(295895);
+    final afterSecondUpdate = await helper.getBoardGameWithRelationsById(295895);
     expect(afterSecondUpdate, isNotNull);
     expect(afterSecondUpdate!.mechanics.any((mechanic) => mechanic.id == addedMechanicId), isFalse);
     expect(afterSecondUpdate.mechanics.any((mechanic) => mechanic.id == removedOriginalMechanicId), isTrue);

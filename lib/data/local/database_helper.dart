@@ -18,6 +18,9 @@ class DatabaseHelper{
   static String? _databasePathOverride;
 
   static void setDatabasePathOverrideForTesting(String? path) {
+    if (_database != null && _database!.isOpen) {
+      throw StateError('Cannot change database path while database is open. Call close() first.');
+    }
     _databasePathOverride = path;
   }
 
@@ -132,6 +135,10 @@ class DatabaseHelper{
   }
 
   Future<void> updateBoardGameWithRelations(BoardGame game) async {
+    final existing = await getBoardGameById(game.bggId);
+    if (existing == null) {
+      throw ArgumentError('Cannot update non-existent game with bgg_id=${game.bggId}');
+    }
     final db = await database;
     await db.transaction((txn) async {
       await txn.update('board_games', game.toMap(), where: 'bgg_id = ?', whereArgs: [game.bggId]);
@@ -174,7 +181,7 @@ class DatabaseHelper{
     }
   }
 
-  Future<BoardGame?> getBoardGameWitRelationsById(int bggId) async {
+  Future<BoardGame?> getBoardGameWithRelationsById(int bggId) async {
     final game = await getBoardGameById(bggId);
     if (game == null) {
       return null;
