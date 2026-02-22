@@ -15,6 +15,11 @@ class DatabaseHelper{
   DatabaseHelper._internal();
 
   static Database? _database;
+  static String? _databasePathOverride;
+
+  static void setDatabasePathOverrideForTesting(String? path) {
+    _databasePathOverride = path;
+  }
 
   Future<String> loadSql(String path) async {
     return await rootBundle.loadString(path);
@@ -27,13 +32,16 @@ class DatabaseHelper{
   }
 
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'board_games_database.db');
+    final path = _databasePathOverride ??
+        join(await getDatabasesPath(), 'board_games_database.db');
     print('Database path: $path');
 
     return await openDatabase(
       path,
       version: 1,
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
       onCreate: (db, version) async {
         final createTablesSql = await loadSql('assets/sql/create_tables.sql');
         final statements = createTablesSql.split(';');
@@ -48,8 +56,10 @@ class DatabaseHelper{
   }
 
   Future<void> close() async {
-    final db = await database;
-    await db.close();
+    final db = _database;
+    if (db != null && db.isOpen) {
+      await db.close();
+    }
     _database = null;
   }
 

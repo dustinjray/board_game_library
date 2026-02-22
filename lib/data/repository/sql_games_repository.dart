@@ -57,13 +57,14 @@ class SqlGamesRepository implements GamesRepository {
 
   @override
   Future<BoardGame> getGameById(int id) async {
-    var game = await _dbHelper.getBoardGameById(id);
+    var game = await _dbHelper.getBoardGameWitRelationsById(id);
     if (game != null) {
       return game;
     } else {
       throw Exception('Game with id $id not found');
     }
   }
+
 
   @override
   Future<List<BoardGame>> searchByCriteria(BoardGameCriteria criteria) async {
