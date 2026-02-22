@@ -10,7 +10,10 @@ abstract class GamesRepository {
     List<BoardGame> games, {
     int chunkSize = 2000,
   });
+  /// Returns all games without loading categories/mechanics/expansions.
   Future<List<BoardGame>> getAllGames();
+
+  /// Returns a single game and includes related categories/mechanics/expansions.
   Future<BoardGame> getGameById(int id);
   Future<void> insertGame(BoardGame game);
   Future<void> insertGameWithRelations(BoardGame game);

@@ -99,6 +99,9 @@ void main() {
         expect(match.name, expected.name);
         expect(match.yearPublished, expected.yearPublished);
         expect(match.isExpansion, expected.isExpansion);
+        expect(match.categories, isEmpty);
+        expect(match.mechanics, isEmpty);
+        expect(match.expansions, isEmpty);
       }
     });
 
@@ -109,6 +112,11 @@ void main() {
       expect(actual.name, expected.name);
       expect(actual.yearPublished, expected.yearPublished);
       expect(actual.isExpansion, expected.isExpansion);
+      expect(actual.categories.length, 1);
+      expect(actual.categories.first.id, 1002);
+      expect(actual.mechanics.length, 1);
+      expect(actual.mechanics.first.id, 2002);
+      expect(actual.expansions, isEmpty);
     });
 
     test('insertGame() successfully inserts a board game', () async {
