@@ -88,6 +88,16 @@ class DatabaseHelper{
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
+  Future<int> pruneExpansionGamesTemporarily() async {
+    final db = await database;
+    await db.delete(
+      'board_games',
+      where: 'is_expansion = ?',
+      whereArgs: [1],
+    );
+    return getBoardGameCount();
+  }
+
   Future<void> insertBoardGamesBulk(
     List<BoardGame> games, {
     int chunkSize = 2000,

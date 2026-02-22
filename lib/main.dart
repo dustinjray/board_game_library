@@ -14,13 +14,16 @@ Future<void> main() async {
   final dbHelper = DatabaseHelper();
   final repository = SqlGamesRepository(dbHelper);
 
+  final remainingGames = await dbHelper.pruneExpansionGamesTemporarily();
+  print('Temporary prune complete. Remaining non-expansion games: $remainingGames');
+
   await _seedRepositoryIfEmpty(repository);
   runApp(MainApp(repository: repository));
 }
 
 Future<void> _seedRepositoryIfEmpty(SqlGamesRepository repository) async {
   final existingCount = await repository.countGames();
-  if (existingCount >= 167331) {
+  if (existingCount >= 1) {
     print('Number of games already in repository: $existingCount');
     return; // Repository already has data, no need to seed
   }
