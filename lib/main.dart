@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:board_game_library/data/local/database_helper.dart';
 import 'package:board_game_library/data/repository/sql_games_repository.dart';
+import 'package:board_game_library/screens/user_collection_screen.dart';
+import 'package:board_game_library/services/board_game_service.dart';
 import 'package:flutter/material.dart';
 import 'package:board_game_library/config/database_factory_init.dart';
 
@@ -13,12 +15,13 @@ Future<void> main() async {
   await initializeDatabaseFactory();
   final dbHelper = DatabaseHelper();
   final repository = SqlGamesRepository(dbHelper);
+  final service = BoardGameService();
 
   final remainingGames = await dbHelper.pruneExpansionGamesTemporarily();
   print('Temporary prune complete. Remaining non-expansion games: $remainingGames');
 
   await _seedRepositoryIfEmpty(repository);
-  runApp(MainApp(repository: repository));
+  runApp(MainApp(repository: repository, service: service));
 }
 
 Future<void> _seedRepositoryIfEmpty(SqlGamesRepository repository) async {
@@ -35,21 +38,23 @@ Future<void> _seedRepositoryIfEmpty(SqlGamesRepository repository) async {
 
 class MainApp extends StatelessWidget {
   final SqlGamesRepository repository;
+  final BoardGameService service;
 
-  const MainApp({super.key, required this.repository});
+  const MainApp({super.key, required this.repository, required this.service});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: BoardGameListPage(repository: repository),
+      home: UserCollectionScreen(repository: repository, service: service),
     );
   }
 }
 
 class BoardGameListPage extends StatefulWidget {
   final SqlGamesRepository repository;
+  final BoardGameService service;
 
-  const BoardGameListPage({super.key, required this.repository});
+  const BoardGameListPage({super.key, required this.repository, required this.service});
 
   @override
   State<BoardGameListPage> createState() => _BoardGameListPageState();

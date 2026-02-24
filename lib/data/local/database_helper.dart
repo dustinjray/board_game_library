@@ -8,8 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-class DatabaseHelper{
-
+class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
@@ -19,7 +18,9 @@ class DatabaseHelper{
 
   static void setDatabasePathOverrideForTesting(String? path) {
     if (_database != null && _database!.isOpen) {
-      throw StateError('Cannot change database path while database is open. Call close() first.');
+      throw StateError(
+        'Cannot change database path while database is open. Call close() first.',
+      );
     }
     _databasePathOverride = path;
   }
@@ -35,7 +36,8 @@ class DatabaseHelper{
   }
 
   Future<Database> _initDatabase() async {
-    final path = _databasePathOverride ??
+    final path =
+        _databasePathOverride ??
         join(await getDatabasesPath(), 'board_games_database.db');
     print('Database path: $path');
 
@@ -54,7 +56,7 @@ class DatabaseHelper{
             print('Executed SQL statement: $statement');
           }
         }
-      }
+      },
     );
   }
 
@@ -77,7 +79,9 @@ class DatabaseHelper{
 
   Future<int> getBoardGameCount() async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COUNT(*) AS count FROM board_games');
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS count FROM board_games',
+    );
     final value = result.first['count'];
     if (value is int) {
       return value;
@@ -90,11 +94,7 @@ class DatabaseHelper{
 
   Future<int> pruneExpansionGamesTemporarily() async {
     final db = await database;
-    await db.delete(
-      'board_games',
-      where: 'is_expansion = ?',
-      whereArgs: [1],
-    );
+    await db.delete('board_games', where: 'is_expansion = ?', whereArgs: [1]);
     return getBoardGameCount();
   }
 
@@ -127,7 +127,11 @@ class DatabaseHelper{
   Future<void> insertBoardGameWithRelations(BoardGame game) async {
     final db = await database;
     await db.transaction((txn) async {
-      await txn.insert('board_games', game.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
+      await txn.insert(
+        'board_games',
+        game.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
       await _insertCategories(txn, game.bggId, game.categories);
       await _insertMechanics(txn, game.bggId, game.mechanics);
       await _insertExpansions(txn, game.bggId, game.expansions);
@@ -147,11 +151,18 @@ class DatabaseHelper{
   Future<void> updateBoardGameWithRelations(BoardGame game) async {
     final existing = await getBoardGameById(game.bggId);
     if (existing == null) {
-      throw ArgumentError('Cannot update non-existent game with bgg_id=${game.bggId}');
+      throw ArgumentError(
+        'Cannot update non-existent game with bgg_id=${game.bggId}',
+      );
     }
     final db = await database;
     await db.transaction((txn) async {
-      await txn.update('board_games', game.toMap(), where: 'bgg_id = ?', whereArgs: [game.bggId]);
+      await txn.update(
+        'board_games',
+        game.toMap(),
+        where: 'bgg_id = ?',
+        whereArgs: [game.bggId],
+      );
       await _syncGameCategories(txn, game.bggId, game.categories);
       await _syncGameMechanics(txn, game.bggId, game.mechanics);
       await _syncGameExpansions(txn, game.bggId, game.expansions);
@@ -169,7 +180,10 @@ class DatabaseHelper{
 
   Future<List<BoardGame>> getAllBoardGames() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('board_games', orderBy: 'name ASC');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'board_games',
+      orderBy: 'name ASC',
+    );
 
     return List.generate(maps.length, (i) {
       return BoardGame.fromMap(maps[i]);
@@ -213,12 +227,12 @@ class DatabaseHelper{
     final args = <dynamic>[];
 
     if (criteria.minPlayers != null) {
-      sql += ' AND min_players >= ?';
+      sql += ' AND min_players <= ?';
       args.add(criteria.minPlayers);
     }
 
     if (criteria.maxPlayers != null) {
-      sql += ' AND max_players <= ?';
+      sql += ' AND max_players >= ?';
       args.add(criteria.maxPlayers);
     }
 
@@ -276,12 +290,14 @@ class DatabaseHelper{
 
     if (criteria.categories != null && criteria.categories!.isNotEmpty) {
       final categoryIds = criteria.categories!.map((c) => c.id).join(',');
-      sql += ' AND bgg_id IN (SELECT board_game_id FROM board_game_categories WHERE category_id IN ($categoryIds))';
+      sql +=
+          ' AND bgg_id IN (SELECT board_game_id FROM board_game_categories WHERE category_id IN ($categoryIds))';
     }
 
     if (criteria.mechanics != null && criteria.mechanics!.isNotEmpty) {
       final mechanicIds = criteria.mechanics!.map((m) => m.id).join(',');
-      sql += ' AND bgg_id IN (SELECT board_game_id FROM board_game_mechanics WHERE mechanic_id IN ($mechanicIds))';
+      sql +=
+          ' AND bgg_id IN (SELECT board_game_id FROM board_game_mechanics WHERE mechanic_id IN ($mechanicIds))';
     }
 
     sql += ' ORDER BY name ASC';
@@ -291,12 +307,14 @@ class DatabaseHelper{
     return List.generate(maps.length, (i) {
       return BoardGame.fromMap(maps[i]);
     });
-
   }
 
   // Board Game Mechanics CRUD operations
 
-  Future<int> _insertMechanic(Transaction txn, BoardGameMechanic mechanic) async {
+  Future<int> _insertMechanic(
+    Transaction txn,
+    BoardGameMechanic mechanic,
+  ) async {
     return await txn.insert(
       'mechanics',
       mechanic.toMap(),
@@ -306,11 +324,7 @@ class DatabaseHelper{
 
   Future<int> deleteMechanic(int id) async {
     final db = await database;
-    return await db.delete(
-      'mechanics',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('mechanics', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<BoardGameMechanic>> getAllMechanics() async {
@@ -337,18 +351,22 @@ class DatabaseHelper{
     }
   }
 
-  Future<int> _addMechanicToGame(Transaction txn, int bggId, int mechanicId) async {
-    return await txn.insert(
-      'board_game_mechanics',
-      {
-        'board_game_id': bggId,
-        'mechanic_id': mechanicId,
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+  Future<int> _addMechanicToGame(
+    Transaction txn,
+    int bggId,
+    int mechanicId,
+  ) async {
+    return await txn.insert('board_game_mechanics', {
+      'board_game_id': bggId,
+      'mechanic_id': mechanicId,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
-  Future<void> _insertMechanics(Transaction txn, int bggId, List<BoardGameMechanic> mechanics) async {
+  Future<void> _insertMechanics(
+    Transaction txn,
+    int bggId,
+    List<BoardGameMechanic> mechanics,
+  ) async {
     for (var mechanic in mechanics) {
       await _insertMechanic(txn, mechanic);
       await _addMechanicToGame(txn, bggId, mechanic.id);
@@ -357,13 +375,16 @@ class DatabaseHelper{
 
   Future<List<BoardGameMechanic>> getMechanicsForGame(int bggId) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT m.id, m.name
       FROM mechanics m
       JOIN board_game_mechanics bgm ON m.id = bgm.mechanic_id
       WHERE bgm.board_game_id = ?
       ORDER BY m.name ASC
-    ''', [bggId]);
+    ''',
+      [bggId],
+    );
 
     return List.generate(maps.length, (i) {
       return BoardGameMechanic.fromMap(maps[i]);
@@ -389,7 +410,11 @@ class DatabaseHelper{
     }
   }
 
-  Future<void> _syncGameMechanics(Transaction txn, int bggId, List<BoardGameMechanic> mechanics) async {
+  Future<void> _syncGameMechanics(
+    Transaction txn,
+    int bggId,
+    List<BoardGameMechanic> mechanics,
+  ) async {
     final desiredMechanicIds = mechanics.map((m) => m.id).toSet();
     final existingRows = await txn.query(
       'board_game_mechanics',
@@ -403,7 +428,9 @@ class DatabaseHelper{
 
     final toAdd = desiredMechanicIds.difference(existingMechanicIds);
     final toRemove = existingMechanicIds.difference(desiredMechanicIds);
-    final mechanicsById = {for (final mechanic in mechanics) mechanic.id: mechanic};
+    final mechanicsById = {
+      for (final mechanic in mechanics) mechanic.id: mechanic,
+    };
 
     if (toRemove.isNotEmpty) {
       final placeholders = List.filled(toRemove.length, '?').join(',');
@@ -427,7 +454,10 @@ class DatabaseHelper{
 
   // Board Game Categories CRUD operations
 
-  Future<int> _insertCategory(Transaction txn, BoardGameCategory category) async {
+  Future<int> _insertCategory(
+    Transaction txn,
+    BoardGameCategory category,
+  ) async {
     return await txn.insert(
       'categories',
       category.toMap(),
@@ -437,11 +467,7 @@ class DatabaseHelper{
 
   Future<int> deleteCategory(int id) async {
     final db = await database;
-    return await db.delete(
-      'categories',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('categories', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<BoardGameCategory>> getAllCategories() async {
@@ -471,18 +497,22 @@ class DatabaseHelper{
     }
   }
 
-  Future<int> _addCategoryToGame(Transaction txn, int bggId, int categoryId) async {
-    return await txn.insert(
-      'board_game_categories',
-      {
-        'board_game_id': bggId,
-        'category_id': categoryId,
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+  Future<int> _addCategoryToGame(
+    Transaction txn,
+    int bggId,
+    int categoryId,
+  ) async {
+    return await txn.insert('board_game_categories', {
+      'board_game_id': bggId,
+      'category_id': categoryId,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
-  Future<void> _insertCategories(Transaction txn, int bggId, List<BoardGameCategory> categories) async {
+  Future<void> _insertCategories(
+    Transaction txn,
+    int bggId,
+    List<BoardGameCategory> categories,
+  ) async {
     for (var category in categories) {
       await _insertCategory(txn, category);
       await _addCategoryToGame(txn, bggId, category.id);
@@ -491,13 +521,16 @@ class DatabaseHelper{
 
   Future<List<BoardGameCategory>> getCategoriesForGame(int bggId) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT c.id, c.name
       FROM categories c
       JOIN board_game_categories bgc ON c.id = bgc.category_id
       WHERE bgc.board_game_id = ?
       ORDER BY c.name ASC
-    ''', [bggId]);
+    ''',
+      [bggId],
+    );
 
     return List.generate(maps.length, (i) {
       return BoardGameCategory.fromMap(maps[i]);
@@ -523,7 +556,11 @@ class DatabaseHelper{
     }
   }
 
-  Future<void>_syncGameCategories(Transaction txn, int bggId, List<BoardGameCategory> categories) async {
+  Future<void> _syncGameCategories(
+    Transaction txn,
+    int bggId,
+    List<BoardGameCategory> categories,
+  ) async {
     final desiredCategoryIds = categories.map((c) => c.id).toSet();
     final existingRows = await txn.query(
       'board_game_categories',
@@ -537,7 +574,9 @@ class DatabaseHelper{
 
     final toAdd = desiredCategoryIds.difference(existingCategoryIds);
     final toRemove = existingCategoryIds.difference(desiredCategoryIds);
-    final categoriesById = {for (final category in categories) category.id: category};
+    final categoriesById = {
+      for (final category in categories) category.id: category,
+    };
 
     if (toRemove.isNotEmpty) {
       final placeholders = List.filled(toRemove.length, '?').join(',');
@@ -561,7 +600,10 @@ class DatabaseHelper{
 
   // Board Game Expansions CRUD operations
 
-  Future<int> _insertExpansion(Transaction txn, BoardGameExpansion expansion) async {
+  Future<int> _insertExpansion(
+    Transaction txn,
+    BoardGameExpansion expansion,
+  ) async {
     return await txn.insert(
       'expansions',
       expansion.toMap(),
@@ -571,11 +613,7 @@ class DatabaseHelper{
 
   Future<int> deleteExpansion(int id) async {
     final db = await database;
-    return await db.delete(
-      'expansions',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('expansions', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<BoardGameExpansion>> getAllExpansions() async {
@@ -602,18 +640,22 @@ class DatabaseHelper{
     }
   }
 
-  Future<int> _addExpansionToGame(Transaction txn, int bggId, int expansionId) async {
-    return await txn.insert(
-      'board_game_expansions',
-      {
-        'board_game_id': bggId,
-        'expansion_id': expansionId,
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+  Future<int> _addExpansionToGame(
+    Transaction txn,
+    int bggId,
+    int expansionId,
+  ) async {
+    return await txn.insert('board_game_expansions', {
+      'board_game_id': bggId,
+      'expansion_id': expansionId,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
-  Future<void> _insertExpansions(Transaction txn, int bggId, List<BoardGameExpansion> expansions) async {
+  Future<void> _insertExpansions(
+    Transaction txn,
+    int bggId,
+    List<BoardGameExpansion> expansions,
+  ) async {
     for (var expansion in expansions) {
       await _insertExpansion(txn, expansion);
       await _addExpansionToGame(txn, bggId, expansion.id);
@@ -622,20 +664,27 @@ class DatabaseHelper{
 
   Future<List<BoardGameExpansion>> getExpansionsForGame(int bggId) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT e.id, e.name
       FROM expansions e
       JOIN board_game_expansions bge ON e.id = bge.expansion_id
       WHERE bge.board_game_id = ?
       ORDER BY e.name ASC
-    ''', [bggId]);
+    ''',
+      [bggId],
+    );
 
     return List.generate(maps.length, (i) {
       return BoardGameExpansion.fromMap(maps[i]);
     });
   }
 
-  Future<void> _syncGameExpansions(Transaction txn, int bggId, List<BoardGameExpansion> expansions) async {
+  Future<void> _syncGameExpansions(
+    Transaction txn,
+    int bggId,
+    List<BoardGameExpansion> expansions,
+  ) async {
     final desiredExpansionIds = expansions.map((e) => e.id).toSet();
     final existingRows = await txn.query(
       'board_game_expansions',
@@ -649,7 +698,9 @@ class DatabaseHelper{
 
     final toAdd = desiredExpansionIds.difference(existingExpansionIds);
     final toRemove = existingExpansionIds.difference(desiredExpansionIds);
-    final expansionsById = {for (final expansion in expansions) expansion.id: expansion};
+    final expansionsById = {
+      for (final expansion in expansions) expansion.id: expansion,
+    };
 
     if (toRemove.isNotEmpty) {
       final placeholders = List.filled(toRemove.length, '?').join(',');
@@ -670,7 +721,4 @@ class DatabaseHelper{
       }
     }
   }
-
-
-
 }

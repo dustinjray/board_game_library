@@ -24,6 +24,22 @@ class BoardGame {
   final int timesPlayed;
   final bool isOwned;
 
+  bool get hasFetchedDetails {
+    return minPlayers != null ||
+        maxPlayers != null ||
+        minPlaytime != null ||
+        maxPlaytime != null ||
+        age != null ||
+        (description?.trim().isNotEmpty ?? false) ||
+        (thumbnail?.trim().isNotEmpty ?? false) ||
+        (image?.trim().isNotEmpty ?? false) ||
+        categories.isNotEmpty ||
+        mechanics.isNotEmpty ||
+        expansions.isNotEmpty;
+  }
+
+  bool get needsDetailsFetch => !hasFetchedDetails;
+
   BoardGame({
     required this.bggId,
     required this.name,
@@ -50,6 +66,10 @@ class BoardGame {
     final document = xml.XmlDocument.parse(xmlString);
     final boardgameElement = document.findElements('boardgame').first;
 
+    return BoardGame.fromXmlElement(boardgameElement);
+  }
+
+  factory BoardGame.fromXmlElement(xml.XmlElement boardgameElement) {
     // Extract ID from objectid attribute
     final bggId = _toInt(boardgameElement.getAttribute('objectid')) ?? 0;
 
