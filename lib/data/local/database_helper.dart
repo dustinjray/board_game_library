@@ -3,6 +3,7 @@ import 'package:board_game_library/models/board_game_category.dart';
 import 'package:board_game_library/models/board_game_criteria.dart';
 import 'package:board_game_library/models/board_game_expansion.dart';
 import 'package:board_game_library/models/board_game_mechanic.dart';
+import 'package:board_game_library/models/player.dart';
 import 'package:flutter/services.dart';
 
 import 'package:path/path.dart';
@@ -720,5 +721,56 @@ class DatabaseHelper {
         }
       }
     }
+  }
+
+  Future<Player?> getPlayerById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'players',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return Player.fromMap(maps.first);
+    } else {
+      return null;
+    }
+  }
+
+  Future<List<Player>> getAllPlayers() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'players',
+      orderBy: 'name ASC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return Player.fromMap(maps[i]);
+    });
+  }
+
+  Future<int> insertPlayer(Player player) async {
+    final db = await database;
+    return await db.insert(
+      'players',
+      player.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  Future<int> deletePlayer(int id) async {
+    final db = await database;
+    return await db.delete('players', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> updatePlayer(Player player) async {
+    final db = await database;
+    return await db.update(
+      'players',
+      player.toMap(),
+      where: 'id = ?',
+      whereArgs: [player.id],
+    );
   }
 }

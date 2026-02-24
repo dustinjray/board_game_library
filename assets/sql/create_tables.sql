@@ -54,3 +54,26 @@ CREATE TABLE board_game_expansions (
     FOREIGN KEY (board_game_id) REFERENCES board_games (bgg_id) ON DELETE CASCADE,
     FOREIGN KEY (expansion_id) REFERENCES expansions (id) ON DELETE CASCADE
 );
+
+CREATE TABLE players (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE play_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    board_game_id INTEGER NOT NULL,
+    date_played DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    winner_id INTEGER,
+    FOREIGN KEY (board_game_id) REFERENCES board_games (bgg_id) ON DELETE CASCADE,
+    FOREIGN KEY (winner_id) REFERENCES players (id) ON DELETE SET NULL
+);
+
+CREATE TABLE play_session_players (
+    play_session_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    player_score INTEGER,
+    PRIMARY KEY (play_session_id, player_id),
+    FOREIGN KEY (play_session_id) REFERENCES play_sessions (id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES players (id) ON DELETE CASCADE
+);
