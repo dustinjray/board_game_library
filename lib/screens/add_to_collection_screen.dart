@@ -31,7 +31,7 @@ class _AddToCollectionScreenState extends State<AddToCollectionScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _allGamesFuture = widget.repository.getAllGames();
+    _allGamesFuture = widget.repository.getAllBaseGames();
     _searchController.addListener(() {
       setState(() {
         _searchText = _searchController.text;
@@ -100,7 +100,7 @@ class _AddToCollectionScreenState extends State<AddToCollectionScreen> {
         }
 
         final fetchedGame = await widget.service.fetchBoardGameDetails(game.bggId);
-        
+        final isUpdate = game.hasFetchedDetails;
         // Merge fetched details with user-specific flags from local game
         final gameToSave = fetchedGame.copyWith(
           isFavorite: game.isFavorite,
@@ -109,6 +109,7 @@ class _AddToCollectionScreenState extends State<AddToCollectionScreen> {
         );
 
         // Update database with full details
+        //await widget.repository.persistGameWithRelations(gameToSave, isUpdate);
         await widget.repository.updateGameWithRelations(gameToSave);
       } catch (e) {
         if (mounted) {
@@ -127,7 +128,7 @@ class _AddToCollectionScreenState extends State<AddToCollectionScreen> {
     if (!mounted) return;
 
     // Load game with relations from database
-    final gameToShow = await widget.repository.getGameById(game.bggId);
+    final gameToShow = await widget.repository.getGameById(game.bggId) ?? game;
 
     if (!mounted) return;
 

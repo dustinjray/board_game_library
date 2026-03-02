@@ -12,14 +12,17 @@ abstract class GamesRepository {
   });
   /// Returns all games without loading categories/mechanics/expansions.
   Future<List<BoardGame>> getAllGames();
-
+  Future<List<BoardGame>> getAllBaseGames();
   /// Returns a single game and includes related categories/mechanics/expansions.
-  Future<BoardGame> getGameById(int id);
+  Future<BoardGame?> getGameById(int id);
   Future<void> insertGame(BoardGame game);
+  Future<void> persistGameWithRelations(BoardGame game, bool isUpdate);
   Future<void> insertGameWithRelations(BoardGame game);
   Future<void> updateGame(BoardGame game);
   Future<void> updateGameWithRelations(BoardGame game);
   Future<void> deleteGame(BoardGame game);
+  Future<List<BoardGame>> getAllOwnedGames();
+  Future<List<BoardGame>> getAllOwnedBaseGames();
   Future<List<BoardGame>> searchByCriteria(BoardGameCriteria criteria);
   Future<List<BoardGameCategory>> filterOwnedCategories();
   Future<List<BoardGameMechanic>> filterOwnedMechanics();

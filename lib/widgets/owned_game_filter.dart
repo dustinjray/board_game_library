@@ -6,7 +6,6 @@ class OwnedGameFilterDrawer extends StatelessWidget {
   final TextEditingController nameController;
   final TextEditingController minPlayersController;
   final TextEditingController maxPlayersController;
-  final TextEditingController minPlaytimeController;
   final TextEditingController maxPlaytimeController;
   final TextEditingController ageController;
   final bool? isFavoriteFilter;
@@ -31,7 +30,6 @@ class OwnedGameFilterDrawer extends StatelessWidget {
     required this.nameController,
     required this.minPlayersController,
     required this.maxPlayersController,
-    required this.minPlaytimeController,
     required this.maxPlaytimeController,
     required this.ageController,
     required this.isFavoriteFilter,
@@ -94,28 +92,12 @@ class OwnedGameFilterDrawer extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: minPlaytimeController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Min playtime',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: maxPlaytimeController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Max playtime',
-                    ),
-                  ),
-                ),
-              ],
+            TextField(
+              controller: maxPlaytimeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Max playtime',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(

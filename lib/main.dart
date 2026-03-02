@@ -1,5 +1,13 @@
 import 'dart:async';
 
+import 'package:board_game_library/data/dao/categories_dao.dart';
+import 'package:board_game_library/data/dao/expansions_dao.dart';
+import 'package:board_game_library/data/dao/games_dao.dart';
+import 'package:board_game_library/data/dao/mechanics_dao.dart';
+import 'package:board_game_library/data/dao/sql_categories_dao.dart';
+import 'package:board_game_library/data/dao/sql_expansions_dao.dart';
+import 'package:board_game_library/data/dao/sql_games_dao.dart';
+import 'package:board_game_library/data/dao/sql_mechanics_dao.dart';
 import 'package:board_game_library/data/local/database_helper.dart';
 import 'package:board_game_library/data/repository/sql_games_repository.dart';
 import 'package:board_game_library/screens/user_collection_screen.dart';
@@ -14,11 +22,19 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDatabaseFactory();
   final dbHelper = DatabaseHelper();
-  final repository = SqlGamesRepository(dbHelper);
+  
+  // Initialize all DAOs
+  final GamesDAO gamesDAO = SqlGamesDAO(dbHelper);
+  final CategoriesDAO categoriesDAO = SqlCategoriesDAO(dbHelper);
+  final MechanicsDAO mechanicsDAO = SqlMechanicsDAO(dbHelper);
+  final ExpansionsDAO expansionsDAO = SqlExpansionsDAO(dbHelper);
+  
+  // Initialize repository with all DAOs
+  final repository = SqlGamesRepository(dbHelper, gamesDAO, categoriesDAO, mechanicsDAO, expansionsDAO);
   final service = BoardGameService();
 
-  final remainingGames = await dbHelper.pruneExpansionGamesTemporarily();
-  print('Temporary prune complete. Remaining non-expansion games: $remainingGames');
+  // final remainingGames = await dbHelper.pruneExpansionGamesTemporarily();
+  // print('Temporary prune complete. Remaining non-expansion games: $remainingGames');
 
   await _seedRepositoryIfEmpty(repository);
   runApp(MainApp(repository: repository, service: service));

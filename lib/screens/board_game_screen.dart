@@ -80,7 +80,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 
 		try {
 			// Try to get from database first
-			expansion = await widget.repository.getGameById(expansionId);
+			expansion = await widget.repository.getGameById(expansionId) ?? (throw Exception('Game not found in database'));
 		} catch (e) {
 			// Not in database, try fetching from service
 			var didShowLoading = false;
@@ -148,7 +148,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 			},
 			child: Scaffold(
 				appBar: AppBar(
-					title: Text(game.name),
+					title: Text('${game.name}${game.isExpansion ? ' - EXPANSION' : ''}'),
 					leading: BackButton(
 						onPressed: () => Navigator.of(context).pop(_didUpdate),
 					),

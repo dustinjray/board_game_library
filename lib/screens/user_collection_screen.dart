@@ -25,7 +25,6 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _minPlayersController;
   late final TextEditingController _maxPlayersController;
-  late final TextEditingController _minPlaytimeController;
   late final TextEditingController _maxPlaytimeController;
   late final TextEditingController _ageController;
   late Future<List<BoardGameCategory>> _ownedCategoriesFuture;
@@ -44,7 +43,6 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
     _nameController = TextEditingController();
     _minPlayersController = TextEditingController();
     _maxPlayersController = TextEditingController();
-    _minPlaytimeController = TextEditingController();
     _maxPlaytimeController = TextEditingController();
     _ageController = TextEditingController();
     _ownedCategoriesFuture = widget.repository
@@ -61,7 +59,6 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
     _nameController.dispose();
     _minPlayersController.dispose();
     _maxPlayersController.dispose();
-    _minPlaytimeController.dispose();
     _maxPlaytimeController.dispose();
     _ageController.dispose();
     super.dispose();
@@ -92,7 +89,6 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
           : _nameController.text.trim(),
       minPlayers: _parseInt(_minPlayersController.text),
       maxPlayers: _parseInt(_maxPlayersController.text),
-      minPlaytime: _parseInt(_minPlaytimeController.text),
       maxPlaytime: _parseInt(_maxPlaytimeController.text),
       age: _parseInt(_ageController.text),
       categories: _selectedCategoryIds.isEmpty
@@ -117,7 +113,6 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
       _nameController.clear();
       _minPlayersController.clear();
       _maxPlayersController.clear();
-      _minPlaytimeController.clear();
       _maxPlaytimeController.clear();
       _ageController.clear();
       _selectedCategoryIds.clear();
@@ -191,9 +186,10 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
     if (!mounted) return;
 
     // Load game with relations from database
-    final gameToShow = await widget.repository.getGameById(game.bggId);
+    final gameToShow = await widget.repository.getGameById(game.bggId) ?? game;
 
     if (!mounted) return;
+    print('Opening details for ${gameToShow.name} (BGG ID: ${gameToShow.bggId})');
 
     final hasChanges = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -223,7 +219,6 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
         nameController: _nameController,
         minPlayersController: _minPlayersController,
         maxPlayersController: _maxPlayersController,
-        minPlaytimeController: _minPlaytimeController,
         maxPlaytimeController: _maxPlaytimeController,
         ageController: _ageController,
         isFavoriteFilter: _isFavoriteFilter,
