@@ -14,6 +14,19 @@ abstract class GamesDAO {
   Future<List<BoardGame>> searchByCriteria(BoardGameCriteria criteria);
   Future<int> updateBoardGame(BoardGame game);
   Future<int> updateBoardGameInTransaction(Transaction txn, BoardGame game);
+  Future<int> updateIsFavorite(int bggId, bool isFavorite);
+  Future<int> updateIsOwned(int bggId, bool isOwned);
   Future<int> deleteBoardGame(int bggId);
   Future<int> deleteBoardGameInTransaction(Transaction txn, int bggId);
+  Future<List<BoardGame>> getAllGamesPaged(
+    int page,
+    int pageSize, {
+    String? namePrefix,
+  });
+  Future<List<BoardGame>> getOwnedGamesPaged(
+    int page,
+    int pageSize, {
+    String? namePrefix,
+    BoardGameCriteria? criteria,
+  });
 }

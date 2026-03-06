@@ -56,6 +56,11 @@ class DatabaseHelper {
           }
         }
       },
+      onOpen: (db) async {
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_board_games_name_nocase ON board_games(name COLLATE NOCASE)',
+        );
+      },
     );
   }
 

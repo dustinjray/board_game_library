@@ -20,7 +20,10 @@ class SqlGamesDAO extends GamesDAO {
   }
 
   @override
-  Future<int> insertBoardGameInTransaction(Transaction txn, BoardGame game) async {
+  Future<int> insertBoardGameInTransaction(
+    Transaction txn,
+    BoardGame game,
+  ) async {
     return await txn.insert(
       'board_games',
       game.toMap(),
@@ -29,7 +32,10 @@ class SqlGamesDAO extends GamesDAO {
   }
 
   @override
-  Future<void> insertGamesBulk(List<BoardGame> games, {int chunkSize = 2000}) async {
+  Future<void> insertGamesBulk(
+    List<BoardGame> games, {
+    int chunkSize = 2000,
+  }) async {
     final db = await _dbHelper.database;
 
     for (var start = 0; start < games.length; start += chunkSize) {
@@ -71,7 +77,10 @@ class SqlGamesDAO extends GamesDAO {
   @override
   Future<List<BoardGame>> getAllGames() async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('board_games', orderBy: 'name ASC');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'board_games',
+      orderBy: 'name ASC',
+    );
     return List.generate(maps.length, (i) {
       return BoardGame.fromMap(maps[i]);
     });
@@ -97,7 +106,9 @@ class SqlGamesDAO extends GamesDAO {
 
   @override
   Future<List<BoardGame>> getAllOwnedBaseGames() {
-    return searchByCriteria(BoardGameCriteria(isOwned: true, isExpansion: false));
+    return searchByCriteria(
+      BoardGameCriteria(isOwned: true, isExpansion: false),
+    );
   }
 
   @override
@@ -167,14 +178,16 @@ class SqlGamesDAO extends GamesDAO {
     if (criteria.categories != null && criteria.categories!.isNotEmpty) {
       final categoryIds = criteria.categories!.map((c) => c.id).toList();
       final placeholders = List.filled(categoryIds.length, '?').join(',');
-      sql += ' AND bgg_id IN (SELECT board_game_id FROM board_game_categories WHERE category_id IN ($placeholders))';
+      sql +=
+          ' AND bgg_id IN (SELECT board_game_id FROM board_game_categories WHERE category_id IN ($placeholders))';
       args.addAll(categoryIds);
     }
 
     if (criteria.mechanics != null && criteria.mechanics!.isNotEmpty) {
       final mechanicIds = criteria.mechanics!.map((m) => m.id).toList();
       final placeholders = List.filled(mechanicIds.length, '?').join(',');
-      sql += ' AND bgg_id IN (SELECT board_game_id FROM board_game_mechanics WHERE mechanic_id IN ($placeholders))';
+      sql +=
+          ' AND bgg_id IN (SELECT board_game_id FROM board_game_mechanics WHERE mechanic_id IN ($placeholders))';
       args.addAll(mechanicIds);
     }
 
@@ -199,12 +212,37 @@ class SqlGamesDAO extends GamesDAO {
   }
 
   @override
-  Future<int> updateBoardGameInTransaction(Transaction txn, BoardGame game) async {
+  Future<int> updateBoardGameInTransaction(
+    Transaction txn,
+    BoardGame game,
+  ) async {
     return await txn.update(
       'board_games',
       game.toMap(),
       where: 'bgg_id = ?',
       whereArgs: [game.bggId],
+    );
+  }
+
+  @override
+  Future<int> updateIsFavorite(int bggId, bool isFavorite) async {
+    final db = await _dbHelper.database;
+    return await db.update(
+      'board_games',
+      {'is_favorite': isFavorite ? 1 : 0},
+      where: 'bgg_id = ?',
+      whereArgs: [bggId],
+    );
+  }
+
+  @override
+  Future<int> updateIsOwned(int bggId, bool isOwned) async {
+    final db = await _dbHelper.database;
+    return await db.update(
+      'board_games',
+      {'is_owned': isOwned ? 1 : 0},
+      where: 'bgg_id = ?',
+      whereArgs: [bggId],
     );
   }
 
@@ -218,7 +256,7 @@ class SqlGamesDAO extends GamesDAO {
     );
   }
 
-// Is this method necessary with the delete cascade in place?
+  // Is this method necessary with the delete cascade in place?
   @override
   Future<int> deleteBoardGameInTransaction(Transaction txn, int bggId) async {
     return await txn.delete(
@@ -228,5 +266,140 @@ class SqlGamesDAO extends GamesDAO {
     );
   }
 
+  @override
+  Future<List<BoardGame>> getAllGamesPaged(
+    int page,
+    int pageSize, {
+    String? namePrefix,
+  }) async {
+    final db = await _dbHelper.database;
+    final offset = page * pageSize;
+    final trimmedPrefix = namePrefix?.trim();
+    final hasPrefix = trimmedPrefix != null && trimmedPrefix.isNotEmpty;
 
+    final List<Map<String, dynamic>> maps = await db.query(
+      'board_games',
+      columns: [
+        'bgg_id',
+        'name',
+        'min_players',
+        'max_players',
+        'min_playtime',
+        'max_playtime',
+        'is_favorite',
+        'is_owned',
+        'is_expansion',
+        'details_fetched',
+      ],
+      where: hasPrefix ? 'name LIKE ? COLLATE NOCASE' : null,
+      whereArgs: hasPrefix ? ['$trimmedPrefix%'] : null,
+      orderBy: 'name ASC',
+      limit: pageSize,
+      offset: offset,
+    );
+
+    return List.generate(maps.length, (i) {
+      return BoardGame.fromMap(maps[i]);
+    });
+  }
+
+  @override
+  Future<List<BoardGame>> getOwnedGamesPaged(
+    int page,
+    int pageSize, {
+    String? namePrefix,
+    BoardGameCriteria? criteria,
+  }) async {
+    final db = await _dbHelper.database;
+    final offset = page * pageSize;
+    final effectiveCriteria = criteria ?? const BoardGameCriteria();
+    final trimmedPrefix = namePrefix?.trim();
+
+    if (effectiveCriteria.isOwned == false) {
+      return const <BoardGame>[];
+    }
+
+    String sql = '''
+      SELECT bgg_id, name, min_players, max_players, min_playtime,
+      max_playtime, is_favorite, is_owned, is_expansion, details_fetched
+      FROM board_games
+      WHERE is_owned = 1
+    ''';
+    final args = <dynamic>[];
+
+    if (trimmedPrefix != null && trimmedPrefix.isNotEmpty) {
+      sql += ' AND name LIKE ? COLLATE NOCASE';
+      args.add('$trimmedPrefix%');
+    }
+
+    if (effectiveCriteria.minPlayers != null) {
+      sql += ' AND min_players <= ?';
+      args.add(effectiveCriteria.minPlayers);
+    }
+
+    if (effectiveCriteria.maxPlayers != null) {
+      sql += ' AND max_players >= ?';
+      args.add(effectiveCriteria.maxPlayers);
+    }
+
+    if (effectiveCriteria.maxPlaytime != null) {
+      sql += ' AND max_playtime <= ?';
+      args.add(effectiveCriteria.maxPlaytime);
+    }
+
+    if (effectiveCriteria.age != null) {
+      sql += ' AND age <= ?';
+      args.add(effectiveCriteria.age);
+    }
+
+    if (effectiveCriteria.isFavorite != null) {
+      sql += effectiveCriteria.isFavorite!
+          ? ' AND is_favorite = 1'
+          : ' AND is_favorite = 0';
+    }
+
+    if (effectiveCriteria.isExpansion != null) {
+      sql += effectiveCriteria.isExpansion!
+          ? ' AND is_expansion = 1'
+          : ' AND is_expansion = 0';
+    }
+
+    if (effectiveCriteria.isUnplayed != null) {
+      sql += effectiveCriteria.isUnplayed!
+          ? ' AND times_played = 0'
+          : ' AND times_played > 0';
+    }
+
+    if (effectiveCriteria.categories != null &&
+        effectiveCriteria.categories!.isNotEmpty) {
+      final categoryIds = effectiveCriteria.categories!
+          .map((category) => category.id)
+          .toList();
+      final placeholders = List.filled(categoryIds.length, '?').join(',');
+      sql +=
+          ' AND bgg_id IN (SELECT board_game_id FROM board_game_categories WHERE category_id IN ($placeholders))';
+      args.addAll(categoryIds);
+    }
+
+    if (effectiveCriteria.mechanics != null &&
+        effectiveCriteria.mechanics!.isNotEmpty) {
+      final mechanicIds = effectiveCriteria.mechanics!
+          .map((mechanic) => mechanic.id)
+          .toList();
+      final placeholders = List.filled(mechanicIds.length, '?').join(',');
+      sql +=
+          ' AND bgg_id IN (SELECT board_game_id FROM board_game_mechanics WHERE mechanic_id IN ($placeholders))';
+      args.addAll(mechanicIds);
+    }
+
+    sql += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+    args.add(pageSize);
+    args.add(offset);
+
+    final maps = await db.rawQuery(sql, args);
+
+    return List.generate(maps.length, (i) {
+      return BoardGame.fromMap(maps[i]);
+    });
+  }
 }

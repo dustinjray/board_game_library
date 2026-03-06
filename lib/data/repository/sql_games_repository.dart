@@ -9,6 +9,7 @@ import 'package:board_game_library/models/board_game_category.dart';
 import 'package:board_game_library/models/board_game_criteria.dart';
 import 'package:board_game_library/models/board_game_expansion.dart';
 import 'package:board_game_library/models/board_game_mechanic.dart';
+import 'package:board_game_library/services/board_game_service.dart';
 
 class SqlGamesRepository implements GamesRepository {
   final DatabaseHelper _dbHelper;
@@ -16,8 +17,16 @@ class SqlGamesRepository implements GamesRepository {
   final CategoriesDAO _categoriesDAO;
   final MechanicsDAO _mechanicsDAO;
   final ExpansionsDAO _expansionsDAO;
+  final BoardGameService _service;
 
-  SqlGamesRepository(this._dbHelper, this._gamesDAO, this._categoriesDAO, this._mechanicsDAO, this._expansionsDAO);
+  SqlGamesRepository(
+    this._dbHelper,
+    this._gamesDAO,
+    this._categoriesDAO,
+    this._mechanicsDAO,
+    this._expansionsDAO,
+    this._service,
+  );
 
   @override
   Future<int> countGames() async {
@@ -53,6 +62,63 @@ class SqlGamesRepository implements GamesRepository {
   }
 
   @override
+  Future<void> addGameToCollection(BoardGame game) async {
+    final existingGame = await _gamesDAO.getBoardGameById(game.bggId);
+    if (existingGame == null) {
+      throw Exception('Game with id ${game.bggId} was not found');
+    }
+
+    if (existingGame.detailsFetched) {
+      final result = await _gamesDAO.updateIsOwned(existingGame.bggId, true);
+      if (result == 0) {
+        throw Exception(
+          'Failed to update owned status for game with id ${existingGame.bggId}',
+        );
+      }
+      return;
+    }
+
+    final fetchedGame = await _service.fetchBoardGameDetails(
+      existingGame.bggId,
+    );
+    final gameToSave = fetchedGame.copyWith(
+      isFavorite: existingGame.isFavorite,
+      isOwned: true,
+      timesPlayed: existingGame.timesPlayed,
+    );
+
+    await updateGameWithRelations(gameToSave);
+  }
+
+  @override
+  Future<void> updateIsFavorite(BoardGame game, bool isFavorite) async {
+    final updatedGame = game.copyWith(isFavorite: isFavorite);
+    final result = await _gamesDAO.updateBoardGame(updatedGame);
+    if (result == 0) {
+      throw Exception(
+        'Failed to update favorite status for game with id ${game.bggId}',
+      );
+    } else {
+      print(
+        'Updated favorite status for game with id ${game.bggId} to $isFavorite',
+      );
+    }
+  }
+
+  @override
+  Future<void> updateIsOwned(BoardGame game, bool isOwned) async {
+    final updatedGame = game.copyWith(isOwned: isOwned);
+    final result = await _gamesDAO.updateBoardGame(updatedGame);
+    if (result == 0) {
+      throw Exception(
+        'Failed to update owned status for game with id ${game.bggId}',
+      );
+    } else {
+      print('Updated owned status for game with id ${game.bggId} to $isOwned');
+    }
+  }
+
+  @override
   Future<void> insertGameWithRelations(BoardGame game) async {
     // This would be when inserting a game from the BGG API that did not exist in the database before.
     final db = await _dbHelper.database;
@@ -61,9 +127,21 @@ class SqlGamesRepository implements GamesRepository {
       if (gameId == 0) {
         throw Exception('Failed to insert game with id ${game.bggId}');
       }
-      await _categoriesDAO.persistCategoriesInTransaction(txn, game.bggId, game.categories);
-      await _mechanicsDAO.persistMechanicsInTransaction(txn, game.bggId, game.mechanics);
-      await _expansionsDAO.persistExpansionsInTransaction(txn, game.bggId, game.expansions);
+      await _categoriesDAO.persistCategoriesInTransaction(
+        txn,
+        game.bggId,
+        game.categories,
+      );
+      await _mechanicsDAO.persistMechanicsInTransaction(
+        txn,
+        game.bggId,
+        game.mechanics,
+      );
+      await _expansionsDAO.persistExpansionsInTransaction(
+        txn,
+        game.bggId,
+        game.expansions,
+      );
     });
   }
 
@@ -96,14 +174,27 @@ class SqlGamesRepository implements GamesRepository {
     if (game == null) {
       return null;
     }
+    if (!game.detailsFetched) {
+      // If the game details have not been fetched before, fetch them from the BGG API and update the database before returning the game.
+      try {
+        final fetchedGame = await _service.fetchBoardGameDetails(id);
+        await updateGameWithRelations(fetchedGame);
+        return fetchedGame;
+      } catch (e) {
+        print('Error fetching details for game with id $id: $e');
+        // If fetching details fails for any reason, return the game without details rather than throwing an error.
+        return game;
+      }
+    }
     final categories = await _categoriesDAO.getCategoriesForGame(id);
     final mechanics = await _mechanicsDAO.getMechanicsForGame(id);
     final expansions = await _expansionsDAO.getExpansionsForGame(id);
-    // game.categories.addAll(await _categoriesDAO.getCategoriesForGame(id));
-    // game.mechanics.addAll(await _mechanicsDAO.getMechanicsForGame(id));
-    // game.expansions.addAll(await _expansionsDAO.getExpansionsForGame(id));
 
-    return game.copyWith(categories:categories, mechanics:mechanics, expansions:expansions);
+    return game.copyWith(
+      categories: categories,
+      mechanics: mechanics,
+      expansions: expansions,
+    );
   }
 
   @override
@@ -117,7 +208,6 @@ class SqlGamesRepository implements GamesRepository {
     // Loads all owned base games, but without categories/mechanics/expansions.
     return await _gamesDAO.getAllOwnedBaseGames();
   }
-
 
   @override
   Future<List<BoardGame>> searchByCriteria(BoardGameCriteria criteria) async {
@@ -145,9 +235,21 @@ class SqlGamesRepository implements GamesRepository {
       if (result == 0) {
         throw Exception('Failed to update game with id ${game.bggId}');
       }
-      await _categoriesDAO.persistCategoriesInTransaction(txn, game.bggId, game.categories);
-      await _mechanicsDAO.persistMechanicsInTransaction(txn, game.bggId, game.mechanics);
-      await _expansionsDAO.persistExpansionsInTransaction(txn, game.bggId, game.expansions);
+      await _categoriesDAO.persistCategoriesInTransaction(
+        txn,
+        game.bggId,
+        game.categories,
+      );
+      await _mechanicsDAO.persistMechanicsInTransaction(
+        txn,
+        game.bggId,
+        game.mechanics,
+      );
+      await _expansionsDAO.persistExpansionsInTransaction(
+        txn,
+        game.bggId,
+        game.expansions,
+      );
     });
   }
 
@@ -169,4 +271,31 @@ class SqlGamesRepository implements GamesRepository {
     return await _expansionsDAO.getExpansionsForGame(bggId);
   }
 
+  @override
+  Future<List<BoardGame>> getAllGamesPaged(
+    int page,
+    int pageSize, {
+    String? namePrefix,
+  }) async {
+    return await _gamesDAO.getAllGamesPaged(
+      page,
+      pageSize,
+      namePrefix: namePrefix,
+    );
+  }
+
+  @override
+  Future<List<BoardGame>> getOwnedGamesPaged(
+    int page,
+    int pageSize, {
+    String? namePrefix,
+    BoardGameCriteria? criteria,
+  }) async {
+    return await _gamesDAO.getOwnedGamesPaged(
+      page,
+      pageSize,
+      namePrefix: namePrefix,
+      criteria: criteria,
+    );
+  }
 }

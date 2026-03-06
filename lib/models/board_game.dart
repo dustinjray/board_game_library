@@ -23,22 +23,23 @@ class BoardGame {
   final bool isFavorite;
   final int timesPlayed;
   final bool isOwned;
+  final bool detailsFetched;
 
-  bool get hasFetchedDetails {
-    return minPlayers != null ||
-        maxPlayers != null ||
-        minPlaytime != null ||
-        maxPlaytime != null ||
-        age != null ||
-        (description?.trim().isNotEmpty ?? false) ||
-        (thumbnail?.trim().isNotEmpty ?? false) ||
-        (image?.trim().isNotEmpty ?? false) ||
-        categories.isNotEmpty ||
-        mechanics.isNotEmpty ||
-        expansions.isNotEmpty;
-  }
+  // bool get hasFetchedDetails {
+  //   return minPlayers != null ||
+  //       maxPlayers != null ||
+  //       minPlaytime != null ||
+  //       maxPlaytime != null ||
+  //       age != null ||
+  //       (description?.trim().isNotEmpty ?? false) ||
+  //       (thumbnail?.trim().isNotEmpty ?? false) ||
+  //       (image?.trim().isNotEmpty ?? false) ||
+  //       categories.isNotEmpty ||
+  //       mechanics.isNotEmpty ||
+  //       expansions.isNotEmpty;
+  // }
 
-  bool get needsDetailsFetch => !hasFetchedDetails;
+  bool get needsDetailsFetch => !detailsFetched;
 
   BoardGame({
     required this.bggId,
@@ -59,6 +60,7 @@ class BoardGame {
     this.isFavorite = false,
     this.timesPlayed = 0,
     this.isOwned = false,
+    this.detailsFetched = false,
   });
 
   /// Creates a BoardGame from an XML string containing a boardgames response
@@ -173,6 +175,7 @@ class BoardGame {
       isFavorite: false,
       isOwned: false,
       timesPlayed: 0,
+      detailsFetched: true,
     );
   }
 
@@ -194,6 +197,7 @@ class BoardGame {
       'is_favorite': isFavorite ? 1 : 0,
       'is_owned': isOwned ? 1 : 0,
       'times_played': timesPlayed,
+      'details_fetched': detailsFetched ? 1 : 0,
     };
   }
 
@@ -219,6 +223,7 @@ class BoardGame {
       isFavorite: (map['is_favorite'] as int?) == 1,
       isOwned: (map['is_owned'] as int?) == 1,
       timesPlayed: (map['times_played'] as int?) ?? 0,
+      detailsFetched: (map['details_fetched'] as int?) == 1,
     );
   }
 
@@ -274,6 +279,7 @@ class BoardGame {
     bool? isFavorite,
     int? timesPlayed,
     bool? isOwned,
+    bool? detailsFetched,
   }) {
     return BoardGame(
       bggId: bggId ?? this.bggId,
@@ -294,6 +300,7 @@ class BoardGame {
       isFavorite: isFavorite ?? this.isFavorite,
       timesPlayed: timesPlayed ?? this.timesPlayed,
       isOwned: isOwned ?? this.isOwned,
+      detailsFetched: detailsFetched ?? this.detailsFetched,
     );
   }
 }

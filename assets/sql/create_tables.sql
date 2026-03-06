@@ -13,8 +13,12 @@ CREATE TABLE board_games (
   image TEXT,
   is_favorite INTEGER NOT NULL DEFAULT 0,
   times_played INTEGER NOT NULL DEFAULT 0,
-  is_owned INTEGER NOT NULL DEFAULT 0
+  is_owned INTEGER NOT NULL DEFAULT 0,
+  details_fetched INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE INDEX IF NOT EXISTS idx_board_games_name_nocase
+ON board_games(name COLLATE NOCASE);
 
 CREATE TABLE categories (
     id INTEGER PRIMARY KEY,
