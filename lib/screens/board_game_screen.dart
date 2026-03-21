@@ -1,3 +1,4 @@
+import 'package:board_game_library/screens/edit_game_screen.dart';
 import 'package:board_game_library/state/games_notifier.dart';
 import 'package:board_game_library/widgets/game_item_expansion_tile.dart';
 import 'package:board_game_library/widgets/game_summary_card.dart';
@@ -19,6 +20,7 @@ class BoardGameScreen extends StatefulWidget {
 }
 
 class _BoardGameScreenState extends State<BoardGameScreen> {
+	late BoardGame _currentGame;
 	late bool _isFavorite;
 	late bool _isOwned;
 	late int _timesPlayed;
@@ -28,6 +30,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 	@override
 	void initState() {
 		super.initState();
+		_currentGame = widget.boardGame;
 		_isFavorite = widget.boardGame.isFavorite;
 		_isOwned = widget.boardGame.isOwned;
 		_timesPlayed = widget.boardGame.timesPlayed;
@@ -41,15 +44,13 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 		});
 
 		try {
-			final updatedGame = widget.boardGame.copyWith(
+			final updatedGame = _currentGame.copyWith(
 				isFavorite: _isFavorite,
 				isOwned: _isOwned,
 				timesPlayed: _timesPlayed,
 			);
 
-			// await widget.repository.updateGame(updatedGame);
       await context.read<GamesNotifier>().updateGame(updatedGame);
-
 			_didUpdate = true;
 
 			if (mounted) {
@@ -74,67 +75,9 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 		}
 	}
 
-	// Future<void> _openExpansionScreen(int expansionId) async {
-	// 	late BoardGame expansion;
-
-	// 	try {
-	// 		// Try to get from database first
-	// 		expansion = await widget.repository.getGameById(expansionId) ?? (throw Exception('Game not found in database'));
-	// 	} catch (e) {
-	// 		// Not in database, try fetching from service
-	// 		var didShowLoading = false;
-	// 		try {
-	// 			if (mounted) {
-	// 				didShowLoading = true;
-	// 				showDialog<void>(
-	// 					context: context,
-	// 					barrierDismissible: false,
-	// 					builder: (context) => const Center(
-	// 						child: CircularProgressIndicator(),
-	// 					),
-	// 				);
-	// 			}
-
-	// 			final fetchedGame = await widget.service.fetchBoardGameDetails(expansionId);
-				
-	// 			// Save to database for future use
-	// 			await widget.repository.insertGameWithRelations(fetchedGame);
-	// 			expansion = fetchedGame;
-	// 		} catch (serviceError) {
-	// 			if (mounted) {
-	// 				ScaffoldMessenger.of(context).showSnackBar(
-	// 					SnackBar(content: Text('Failed to load expansion: $serviceError')),
-	// 				);
-	// 			}
-	// 			return;
-	// 		} finally {
-	// 			if (didShowLoading && mounted) {
-	// 				Navigator.of(context).pop();
-	// 			}
-	// 		}
-	// 	}
-
-	// 	if (!mounted) return;
-
-	// 	final hasChanges = await Navigator.of(context).push<bool>(
-	// 		MaterialPageRoute(
-	// 			builder: (context) => BoardGameScreen(
-	// 				boardGame: expansion,
-	// 				repository: widget.repository,
-	// 				service: widget.service,
-	// 			),
-	// 		),
-	// 	);
-
-	// 	// Propagate changes up the navigation stack
-	// 	if (hasChanges == true && mounted) {
-	// 		Navigator.of(context).pop(true);
-	// 	}
-	// }
-
 	@override
 	Widget build(BuildContext context) {
-		final game = widget.boardGame;
+		final game = _currentGame;
 		final theme = Theme.of(context);
 
 		return PopScope<bool>(
@@ -177,42 +120,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 
 						// Game Stats Card
             GameSummaryCard(game: game),
-
-						// Card(
-						// 	child: Padding(
-						// 		padding: const EdgeInsets.all(16),
-						// 		child: Column(
-						// 			crossAxisAlignment: CrossAxisAlignment.start,
-						// 			children: [
-						// 				Text(
-						// 					'Game Information',
-						// 					style: theme.textTheme.titleMedium?.copyWith(
-						// 						fontWeight: FontWeight.bold,
-						// 					),
-						// 				),
-						// 				const SizedBox(height: 12),
-						// 				if (game.minPlayers != null || game.maxPlayers != null)
-						// 					_buildInfoRow(
-						// 						'Players',
-						// 						game.minPlayers != null && game.maxPlayers != null
-						// 								? '${game.minPlayers} - ${game.maxPlayers}'
-						// 								: game.minPlayers?.toString() ?? game.maxPlayers.toString(),
-						// 					),
-						// 				if (game.minPlaytime != null || game.maxPlaytime != null)
-						// 					_buildInfoRow(
-						// 						'Playtime',
-						// 						game.minPlaytime != null && game.maxPlaytime != null
-						// 								? '${game.minPlaytime} - ${game.maxPlaytime} min'
-						// 								: game.minPlaytime != null
-						// 										? '${game.minPlaytime} min'
-						// 										: '${game.maxPlaytime} min',
-						// 					),
-						// 				if (game.age != null)
-						// 					_buildInfoRow('Age', '${game.age}+'),
-						// 			],
-						// 		),
-						// 	),
-						// ),
 						const SizedBox(height: 16),
 
 						// User Actions Card
@@ -325,20 +232,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                 items: game.categories,
                 labelBuilder: (category) => category.name,
               ),
-							// ExpansionTile(
-							// 	title: Text(
-							// 		'Categories (${game.categories.length})',
-							// 		style: theme.textTheme.titleMedium?.copyWith(
-							// 			fontWeight: FontWeight.bold,
-							// 		),
-							// 	),
-							// 	children: game.categories
-							// 			.map((category) => ListTile(
-							// 						dense: true,
-							// 						title: Text(category.name),
-							// 					))
-							// 			.toList(),
-							// ),
 
 						// Mechanics
 						if (game.mechanics.isNotEmpty)
@@ -347,20 +240,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                 items: game.mechanics,
                 labelBuilder: (mechanic) => mechanic.name,
               ),
-							// ExpansionTile(
-							// 	title: Text(
-							// 		'Mechanics (${game.mechanics.length})',
-							// 		style: theme.textTheme.titleMedium?.copyWith(
-							// 			fontWeight: FontWeight.bold,
-							// 		),
-							// 	),
-							// 	children: game.mechanics
-							// 			.map((mechanic) => ListTile(
-							// 						dense: true,
-							// 						title: Text(mechanic.name),
-							// 					))
-							// 			.toList(),
-							// ),
 
 						// Expansions
 						if (game.expansions.isNotEmpty)
@@ -369,48 +248,34 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                 items: game.expansions,
                 labelBuilder: (expansion) => expansion.name,
               ),
-							// ExpansionTile(
-							// 	title: Text(
-							// 		'Expansions (${game.expansions.length})',
-							// 		style: theme.textTheme.titleMedium?.copyWith(
-							// 			fontWeight: FontWeight.bold,
-							// 		),
-							// 	),
-							// 	children: game.expansions
-							// 			.map((expansion) => ListTile(
-							// 						dense: true,
-							// 						title: Text(expansion.name),
-							// 						trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-							// 						onTap: () => _openExpansionScreen(expansion.id),
-							// 					))
-							// 			.toList(),
-							// ),
 
 						const SizedBox(height: 16),
 					],
 				),
 			),
+			floatingActionButton: FloatingActionButton(
+				child: const Icon(Icons.edit),
+				onPressed: () async {
+					final notifier = context.read<GamesNotifier>();
+					final didUpdate = await Navigator.of(context).push<bool>(
+						MaterialPageRoute(
+							builder: (context) => EditGameScreen(boardGame: _currentGame),
+						),
+					);
+					if (didUpdate == true && mounted) {
+						final refreshed = await notifier.getGameById(_currentGame.bggId);
+						if (refreshed != null && mounted) {
+							setState(() {
+								_currentGame = refreshed;
+								_isFavorite = refreshed.isFavorite;
+								_isOwned = refreshed.isOwned;
+								_timesPlayed = refreshed.timesPlayed;
+								_didUpdate = true;
+							});
+						}
+					}
+				},
+			)
 		));
 	}
-
-	// Widget _buildInfoRow(String label, String value) {
-	// 	return Padding(
-	// 		padding: const EdgeInsets.only(bottom: 8),
-	// 		child: Row(
-	// 			mainAxisAlignment: MainAxisAlignment.spaceBetween,
-	// 			children: [
-	// 				Text(
-	// 					label,
-	// 					style: Theme.of(context).textTheme.bodyMedium,
-	// 				),
-	// 				Text(
-	// 					value,
-	// 					style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-	// 								fontWeight: FontWeight.bold,
-	// 							),
-	// 				),
-	// 			],
-	// 		),
-	// 	);
-	// }
 }

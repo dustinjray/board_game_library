@@ -2,6 +2,7 @@ import 'package:board_game_library/models/board_game_category.dart';
 import 'package:board_game_library/models/board_game_criteria.dart';
 import 'package:board_game_library/models/board_game_mechanic.dart';
 import 'package:board_game_library/state/games_notifier.dart';
+import 'package:board_game_library/util/parsing.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -70,14 +71,6 @@ class _BoardGameFilterState extends State<BoardGameFilter> {
     _maxPlaytimeController.dispose();
     _ageController.dispose();
     super.dispose();
-  }
-
-  int? _parseInt(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-    return int.tryParse(trimmed);
   }
 
   @override
@@ -229,10 +222,10 @@ class _BoardGameFilterState extends State<BoardGameFilter> {
                         isExpansion: _isExpansionFilter,
                         isFavorite: _isFavoriteFilter,
                         isUnplayed: _isUnplayedFilter,
-                        minPlayers: _parseInt(_minPlayersController.text),
-                        maxPlayers: _parseInt(_maxPlayersController.text),
-                        maxPlaytime: _parseInt(_maxPlaytimeController.text),
-                        age: _parseInt(_ageController.text),
+                        minPlayers: parseNullableInt(_minPlayersController.text),
+                        maxPlayers: parseNullableInt(_maxPlayersController.text),
+                        maxPlaytime: parseNullableInt(_maxPlaytimeController.text),
+                        age: parseNullableInt(_ageController.text),
                         categories: _selectedCategoryIds.isEmpty
                             ? const []
                             : categories
