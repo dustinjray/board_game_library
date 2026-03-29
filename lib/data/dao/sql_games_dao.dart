@@ -161,9 +161,11 @@ class SqlGamesDAO extends GamesDAO {
 
     if (criteria.isUnplayed != null) {
       if (criteria.isUnplayed!) {
-        sql += ' AND times_played = 0';
+        sql +=
+            ' AND NOT EXISTS (SELECT 1 FROM play_sessions ps WHERE ps.board_game_id = board_games.bgg_id)';
       } else {
-        sql += ' AND times_played > 0';
+        sql +=
+            ' AND EXISTS (SELECT 1 FROM play_sessions ps WHERE ps.board_game_id = board_games.bgg_id)';
       }
     }
 
@@ -366,8 +368,8 @@ class SqlGamesDAO extends GamesDAO {
 
     if (effectiveCriteria.isUnplayed != null) {
       sql += effectiveCriteria.isUnplayed!
-          ? ' AND times_played = 0'
-          : ' AND times_played > 0';
+          ? ' AND NOT EXISTS (SELECT 1 FROM play_sessions ps WHERE ps.board_game_id = board_games.bgg_id)'
+          : ' AND EXISTS (SELECT 1 FROM play_sessions ps WHERE ps.board_game_id = board_games.bgg_id)';
     }
 
     if (effectiveCriteria.categories != null &&

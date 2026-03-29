@@ -1,4 +1,5 @@
 import 'package:xml/xml.dart' as xml;
+import 'package:board_game_library/util/parsing.dart';
 
 import 'board_game_category.dart';
 import 'board_game_expansion.dart';
@@ -73,7 +74,7 @@ class BoardGame {
 
   factory BoardGame.fromXmlElement(xml.XmlElement boardgameElement) {
     // Extract ID from objectid attribute
-    final bggId = _toInt(boardgameElement.getAttribute('objectid')) ?? 0;
+    final bggId = Parsing.toInt(boardgameElement.getAttribute('objectid')) ?? 0;
 
     // Extract simple text elements
     final yearPublishedElement =
@@ -85,25 +86,25 @@ class BoardGame {
     final minPlayersElement =
         boardgameElement.findElements('minplayers').firstOrNull?.innerText;
     final minPlayers =
-      minPlayersElement != null ? _toInt(minPlayersElement) : null;
+      minPlayersElement != null ? Parsing.toInt(minPlayersElement) : null;
 
     final maxPlayersElement =
         boardgameElement.findElements('maxplayers').firstOrNull?.innerText;
     final maxPlayers =
-      maxPlayersElement != null ? _toInt(maxPlayersElement) : null;
+      maxPlayersElement != null ? Parsing.toInt(maxPlayersElement) : null;
 
     final minPlaytimeElement =
         boardgameElement.findElements('minplaytime').firstOrNull?.innerText;
     final minPlaytime =
-      minPlaytimeElement != null ? _toInt(minPlaytimeElement) : null;
+      minPlaytimeElement != null ? Parsing.toInt(minPlaytimeElement) : null;
 
     final maxPlaytimeElement =
         boardgameElement.findElements('maxplaytime').firstOrNull?.innerText;
     final maxPlaytime =
-      maxPlaytimeElement != null ? _toInt(maxPlaytimeElement) : null;
+      maxPlaytimeElement != null ? Parsing.toInt(maxPlaytimeElement) : null;
 
     final ageElement = boardgameElement.findElements('age').firstOrNull?.innerText;
-    final age = ageElement != null ? _toInt(ageElement) : null;
+    final age = ageElement != null ? Parsing.toInt(ageElement) : null;
 
     // Extract name with primary="true" attribute
     final name = boardgameElement
@@ -125,7 +126,7 @@ class BoardGame {
     final categories = boardgameElement
         .findElements('boardgamecategory')
         .map((element) => BoardGameCategory(
-              id: _toInt(element.getAttribute('objectid')) ?? 0,
+              id: Parsing.toInt(element.getAttribute('objectid')) ?? 0,
               name: element.innerText,
             ))
         .toList();
@@ -142,7 +143,7 @@ class BoardGame {
       .findElements('boardgameexpansion')
       .where((element) => element.getAttribute('inbound') != 'true')
         .map((element) => BoardGameExpansion(
-          id: _toInt(element.getAttribute('objectid')) ?? 0,
+          id: Parsing.toInt(element.getAttribute('objectid')) ?? 0,
               name: element.innerText,
             ))
         .toList();
@@ -151,7 +152,7 @@ class BoardGame {
     final mechanics = boardgameElement
         .findElements('boardgamemechanic')
         .map((element) => BoardGameMechanic(
-              id: _toInt(element.getAttribute('objectid')) ?? 0,
+              id: Parsing.toInt(element.getAttribute('objectid')) ?? 0,
               name: element.innerText,
             ))
         .toList();
@@ -208,10 +209,10 @@ class BoardGame {
     final dynamic isExpansionValue = map['is_expansion'];
 
     return BoardGame(
-      bggId: _toInt(bggIdValue) ?? 0,
+      bggId: Parsing.toInt(bggIdValue) ?? 0,
       name: map['name'] as String,
-      yearPublished: _toInt(yearPublishedValue),
-      isExpansion: _toBool(isExpansionValue),
+      yearPublished: Parsing.toInt(yearPublishedValue),
+      isExpansion: Parsing.toBool(isExpansionValue),
       minPlayers: map['min_players'] as int?,
       maxPlayers: map['max_players'] as int?,
       minPlaytime: map['min_playtime'] as int?,
@@ -225,39 +226,6 @@ class BoardGame {
       timesPlayed: (map['times_played'] as int?) ?? 0,
       detailsFetched: (map['details_fetched'] as int?) == 1,
     );
-  }
-
-  static int? _toInt(dynamic value) {
-    if (value == null) {
-      return null;
-    }
-    if (value is int) {
-      return value;
-    }
-    if (value is num) {
-      return value.toInt();
-    }
-    if (value is String) {
-      return int.tryParse(value.trim());
-    }
-    return null;
-  }
-
-  static bool _toBool(dynamic value) {
-    if (value == null) {
-      return false;
-    }
-    if (value is bool) {
-      return value;
-    }
-    if (value is num) {
-      return value != 0;
-    }
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      return normalized == '1' || normalized == 'true' || normalized == 'yes';
-    }
-    return false;
   }
 
   BoardGame copyWith({

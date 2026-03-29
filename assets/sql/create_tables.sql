@@ -58,3 +58,39 @@ CREATE TABLE board_game_expansions (
     FOREIGN KEY (board_game_id) REFERENCES board_games (bgg_id) ON DELETE CASCADE,
     FOREIGN KEY (expansion_id) REFERENCES expansions (id) ON DELETE CASCADE
 );
+
+CREATE TABLE play_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    board_game_id INTEGER NOT NULL,
+    date_played TEXT NOT NULL,
+    FOREIGN KEY (board_game_id) REFERENCES board_games (bgg_id) ON DELETE CASCADE
+);
+
+CREATE TABLE players (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE play_session_scores (
+    play_session_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    score INTEGER,
+    is_winner INTEGER DEFAULT 0,
+    PRIMARY KEY (play_session_id, player_id),
+    FOREIGN KEY (play_session_id) REFERENCES play_sessions (id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES players (id) ON DELETE CASCADE
+);
+
+CREATE TABLE play_session_expansions (
+    play_session_id INTEGER NOT NULL,
+    expansion_id INTEGER NOT NULL,
+    PRIMARY KEY (play_session_id, expansion_id),
+    FOREIGN KEY (play_session_id) REFERENCES play_sessions (id) ON DELETE CASCADE,
+    FOREIGN KEY (expansion_id) REFERENCES expansions (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_play_session_expansions_session
+ON play_session_expansions(play_session_id);
+
+CREATE INDEX IF NOT EXISTS idx_play_session_expansions_expansion
+ON play_session_expansions(expansion_id);
