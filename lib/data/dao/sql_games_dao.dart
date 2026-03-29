@@ -1,5 +1,6 @@
 import 'package:board_game_library/data/dao/games_dao.dart';
 import 'package:board_game_library/data/local/database_helper.dart';
+import 'package:board_game_library/enums/game_sort_option.dart';
 import 'package:board_game_library/models/board_game.dart';
 import 'package:board_game_library/models/board_game_criteria.dart';
 import 'package:sqflite/sqflite.dart';
@@ -394,7 +395,8 @@ class SqlGamesDAO extends GamesDAO {
       args.addAll(mechanicIds);
     }
 
-    sql += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+    sql += ' ORDER BY ? LIMIT ? OFFSET ?';
+    args.add(_buildOrderByClause(effectiveCriteria));
     args.add(pageSize);
     args.add(offset);
 
@@ -403,5 +405,30 @@ class SqlGamesDAO extends GamesDAO {
     return List.generate(maps.length, (i) {
       return BoardGame.fromMap(maps[i]);
     });
+  }
+
+  String _buildOrderByClause(BoardGameCriteria criteria) {
+    switch (criteria.sortOption) {
+      case GameSortOption.nameDesc:
+        return 'name DESC';
+      case GameSortOption.datePlayedAsc:
+        return 'last_played ASC';
+      case GameSortOption.datePlayedDesc:
+        return 'last_played DESC';
+      case GameSortOption.leastPlayed:
+        return 'play_count ASC';
+      case GameSortOption.mostPlayed:
+        return 'play_count DESC';
+      case GameSortOption.mostPlayers:
+        return 'max_players DESC';
+      case GameSortOption.leastPlayers:
+        return 'min_players ASC';
+      case GameSortOption.longestPlaytime:
+        return 'max_playtime DESC';
+      case GameSortOption.shortestPlaytime:
+        return 'min_playtime ASC';
+      case GameSortOption.nameAsc:
+        return 'name ASC';
+    }
   }
 }
