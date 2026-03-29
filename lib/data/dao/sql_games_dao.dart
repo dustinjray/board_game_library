@@ -326,9 +326,19 @@ class SqlGamesDAO extends GamesDAO {
       SELECT bgg_id, name, min_players, max_players, min_playtime,
       max_playtime, is_favorite, is_owned, is_expansion, details_fetched
       FROM board_games
-      WHERE is_owned = 1
     ''';
     final args = <dynamic>[];
+
+    if (effectiveCriteria.sortOption == GameSortOption.datePlayedAsc ||
+      effectiveCriteria.sortOption == GameSortOption.datePlayedDesc) {
+      sql += ' INNER JOIN (SELECT board_game_id, MAX(date_played) AS last_played FROM play_sessions GROUP BY board_game_id) ps ON board_games.bgg_id = ps.board_game_id';
+    } else if (effectiveCriteria.sortOption == GameSortOption.mostPlayed ||
+        effectiveCriteria.sortOption == GameSortOption.leastPlayed) {
+      sql +=
+          ' INNER JOIN (SELECT board_game_id, COUNT(*) AS play_count FROM play_sessions GROUP BY board_game_id) ps ON board_games.bgg_id = ps.board_game_id';
+    }
+
+    sql += ' WHERE 1=1 AND is_owned = 1';
 
     if (trimmedPrefix != null && trimmedPrefix.isNotEmpty) {
       sql += ' AND name LIKE ? COLLATE NOCASE';
@@ -395,8 +405,8 @@ class SqlGamesDAO extends GamesDAO {
       args.addAll(mechanicIds);
     }
 
-    sql += ' ORDER BY ? LIMIT ? OFFSET ?';
-    args.add(_buildOrderByClause(effectiveCriteria));
+    final orderByClause = _buildOrderByClause(effectiveCriteria);
+    sql += ' ORDER BY $orderByClause LIMIT ? OFFSET ?';
     args.add(pageSize);
     args.add(offset);
 
@@ -409,26 +419,26 @@ class SqlGamesDAO extends GamesDAO {
 
   String _buildOrderByClause(BoardGameCriteria criteria) {
     switch (criteria.sortOption) {
-      case GameSortOption.nameDesc:
-        return 'name DESC';
-      case GameSortOption.datePlayedAsc:
-        return 'last_played ASC';
-      case GameSortOption.datePlayedDesc:
-        return 'last_played DESC';
-      case GameSortOption.leastPlayed:
-        return 'play_count ASC';
-      case GameSortOption.mostPlayed:
-        return 'play_count DESC';
-      case GameSortOption.mostPlayers:
-        return 'max_players DESC';
-      case GameSortOption.leastPlayers:
-        return 'min_players ASC';
-      case GameSortOption.longestPlaytime:
-        return 'max_playtime DESC';
-      case GameSortOption.shortestPlaytime:
-        return 'min_playtime ASC';
       case GameSortOption.nameAsc:
-        return 'name ASC';
+        return 'board_games.name ASC';
+      case GameSortOption.nameDesc:
+        return 'board_games.name DESC';
+      case GameSortOption.datePlayedAsc:
+        return 'datetime(ps.last_played) ASC, board_games.name ASC';
+      case GameSortOption.datePlayedDesc:
+        return 'datetime(ps.last_played) DESC, board_games.name ASC';
+      case GameSortOption.leastPlayed:
+        return 'ps.play_count ASC, board_games.name ASC';
+      case GameSortOption.mostPlayed:
+        return 'ps.play_count DESC, board_games.name ASC';
+      case GameSortOption.mostPlayers:
+        return 'board_games.max_players DESC, board_games.name ASC';
+      case GameSortOption.leastPlayers:
+        return 'board_games.min_players ASC, board_games.name ASC';
+      case GameSortOption.longestPlaytime:
+        return 'board_games.max_playtime DESC, board_games.name ASC';
+      case GameSortOption.shortestPlaytime:
+        return 'board_games.min_playtime ASC, board_games.name ASC';
     }
   }
 }
