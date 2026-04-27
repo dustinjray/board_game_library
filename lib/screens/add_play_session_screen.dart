@@ -3,6 +3,7 @@ import 'package:board_game_library/models/play_session.dart';
 import 'package:board_game_library/models/play_session_details.dart';
 import 'package:board_game_library/models/play_session_score.dart';
 import 'package:board_game_library/state/play_session_notifier.dart';
+import 'package:board_game_library/widgets/bgg_link_button.dart';
 import 'package:board_game_library/widgets/score_entry_modal.dart';
 import 'package:board_game_library/widgets/score_row.dart';
 import 'package:flutter/material.dart';
@@ -315,6 +316,7 @@ class _AddPlaySessionScreenState extends State<AddPlaySessionScreen> {
               onPressed: _save,
               child: const Text('Save'),
             ),
+            const BggLinkButton()
         ],
       ),
       body: ListView(

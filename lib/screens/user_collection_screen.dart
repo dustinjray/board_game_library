@@ -6,6 +6,7 @@ import 'package:board_game_library/models/board_game_criteria.dart';
 import 'package:board_game_library/screens/add_to_collection_screen.dart';
 import 'package:board_game_library/screens/board_game_screen.dart';
 import 'package:board_game_library/state/games_notifier.dart';
+import 'package:board_game_library/widgets/bgg_link_button.dart';
 import 'package:board_game_library/widgets/board_game_filter.dart';
 import 'package:board_game_library/widgets/board_game_tile.dart';
 import 'package:flutter/material.dart';
@@ -243,27 +244,9 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
             ],
           ],
         ),
-        // actions: [
-        //   PopupMenuButton<GameSortOption>(
-        //     tooltip: 'Sort games',
-        //     icon: const Icon(Icons.sort),
-        //     initialValue: _activeCriteria.sortOption,
-        //     onSelected: _onSortOptionSelected,
-        //     itemBuilder: (context) => GameSortOption.values
-        //       .map(
-        //         (option) => PopupMenuItem<GameSortOption>(
-        //           value: option,
-        //           child: Row(
-        //             children: [
-        //               Expanded(child: Text(option.label)),
-        //               if (option == _activeCriteria.sortOption)
-        //                 const Icon(Icons.check, size: 16),
-        //             ],
-        //           )
-        //         )
-        //       ).toList(),
-        //   ),
-        // ],
+        actions: [
+          const BggLinkButton(),
+        ],
       ),
       drawer: BoardGameFilter(
         initialCriteria: _activeCriteria,

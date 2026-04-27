@@ -5,6 +5,7 @@ import 'package:board_game_library/data/repository/sql_games_repository.dart';
 import 'package:board_game_library/screens/board_game_screen.dart';
 import 'package:board_game_library/services/board_game_service.dart';
 import 'package:board_game_library/state/games_notifier.dart';
+import 'package:board_game_library/widgets/bgg_link_button.dart';
 import 'package:board_game_library/widgets/board_game_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -245,6 +246,9 @@ class _AddToCollectionScreenState extends State<AddToCollectionScreen> {
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back),
         ),
+        actions: const [
+          BggLinkButton(),
+        ],
       ),
       body: Column(
         children: [

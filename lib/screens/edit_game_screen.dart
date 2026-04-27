@@ -1,4 +1,5 @@
 import 'package:board_game_library/models/board_game.dart';
+import 'package:board_game_library/widgets/bgg_link_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:board_game_library/state/games_notifier.dart';
@@ -73,7 +74,10 @@ class _EditGameScreenState extends State<EditGameScreen> {
             onPressed: () {
               Navigator.of(context).pop(_didUpdate);
             },
-          )
+          ),
+          actions: [
+            const BggLinkButton(),
+          ]
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
