@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:board_game_library/models/board_game.dart';
-import 'package:board_game_library/data/repository/sql_games_repository.dart';
 import 'package:board_game_library/screens/board_game_screen.dart';
-import 'package:board_game_library/services/board_game_service.dart';
 import 'package:board_game_library/state/games_notifier.dart';
 import 'package:board_game_library/widgets/bgg_link_button.dart';
 import 'package:board_game_library/widgets/board_game_tile.dart';
@@ -177,64 +175,40 @@ class _AddToCollectionScreenState extends State<AddToCollectionScreen> {
   }
 
   Future<void> _openBoardGameScreen(BoardGame game) async {
-    final repository = context.read<SqlGamesRepository>();
-    final service = context.read<BoardGameService>();
+    final notifier = context.read<GamesNotifier>();
+    final gameToShow = await notifier.ensureGameDetailsLoaded(game.bggId);
 
-    // Fetch details if not already present
-    if (game.needsDetailsFetch) {
-      var didShowLoading = false;
-      try {
-        if (mounted) {
-          didShowLoading = true;
-          showDialog<void>(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        final fetchedGame = await service.fetchBoardGameDetails(game.bggId);
-        // Merge fetched details with user-specific flags from local game
-        final gameToSave = fetchedGame.copyWith(
-          isFavorite: game.isFavorite,
-          isOwned: game.isOwned,
-          timesPlayed: game.timesPlayed,
-        );
-
-        // Update database with full details
-        //await widget.repository.persistGameWithRelations(gameToSave, isUpdate);
-        await repository.updateGameWithRelations(gameToSave);
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to fetch game details: $e')),
-          );
-        }
-        // Continue even if fetch fails - will load from database
-      } finally {
-        if (didShowLoading && mounted) {
-          Navigator.of(context).pop();
-        }
-      }
+    if (gameToShow == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load game details.')),
+      );
+      return;
     }
 
     if (!mounted) return;
 
-    // Load game with relations from database
-    final gameToShow = await repository.getGameById(game.bggId) ?? game;
-
-    if (!mounted) return;
-
-    await Navigator.of(context).push<bool>(
+    final hasChanges = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) =>
             BoardGameScreen(
               boardGame: gameToShow,
+              mode: BoardGameScreenMode.addToCollectionPreview,
             ),
       ),
     );
+
+    if (!mounted || hasChanges != true) return;
+
+    final refreshed = await notifier.getGameById(game.bggId);
+    if (!mounted || refreshed == null) return;
+
+    setState(() {
+      final gameIndex = _visibleGames.indexWhere((g) => g.bggId == game.bggId);
+      if (gameIndex != -1) {
+        _visibleGames[gameIndex] = refreshed;
+      }
+    });
   }
 
   @override

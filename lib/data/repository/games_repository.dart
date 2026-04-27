@@ -14,6 +14,9 @@ abstract class GamesRepository {
 
   /// Returns a single game and includes related categories/mechanics/expansions.
   Future<BoardGame?> getGameById(int id);
+
+  /// Ensures details are fetched/persisted when missing, then returns hydrated relations.
+  Future<BoardGame?> ensureGameDetailsLoaded(int id);
   Future<void> insertGame(BoardGame game);
   Future<void> persistGameWithRelations(BoardGame game, bool isUpdate);
   Future<void> addGameToCollection(BoardGame game);

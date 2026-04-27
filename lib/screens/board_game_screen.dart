@@ -10,10 +10,20 @@ import 'package:provider/provider.dart';
 
 import '../models/board_game.dart';
 
+enum BoardGameScreenMode {
+  fullAccess,
+  addToCollectionPreview,
+}
+
 class BoardGameScreen extends StatefulWidget {
   final BoardGame boardGame;
+  final BoardGameScreenMode mode;
 
-  const BoardGameScreen({super.key, required this.boardGame});
+  const BoardGameScreen({
+    super.key,
+    required this.boardGame,
+    this.mode = BoardGameScreenMode.fullAccess,
+  });
 
   @override
   State<BoardGameScreen> createState() => _BoardGameScreenState();
@@ -211,32 +221,37 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
             ],
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          child: const Icon(Icons.edit),
-          onPressed: () async {
-            final notifier = context.read<GamesNotifier>();
-            final playSessionNotifier = context.read<PlaySessionNotifier>();
-            final didUpdate = await Navigator.of(context).push<bool>(
-              MaterialPageRoute(
-                builder: (context) => EditGameScreen(boardGame: _currentGame),
-              ),
-            );
-            if (didUpdate == true && mounted) {
-              final refreshed = await notifier.getGameById(_currentGame.bggId);
-              if (refreshed != null && mounted) {
-                setState(() {
-                  _currentGame = refreshed;
-                  _isFavorite = refreshed.isFavorite;
-                  _isOwned = refreshed.isOwned;
-                  _didUpdate = true;
-                });
-                await playSessionNotifier.loadSessionsForGame(
-                  _currentGame.bggId,
-                );
-              }
-            }
-          },
-        ),
+        floatingActionButton: widget.mode == BoardGameScreenMode.fullAccess
+            ? FloatingActionButton(
+                child: const Icon(Icons.edit),
+                onPressed: () async {
+                  final notifier = context.read<GamesNotifier>();
+                  final playSessionNotifier = context.read<PlaySessionNotifier>();
+                  final didUpdate = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          EditGameScreen(boardGame: _currentGame),
+                    ),
+                  );
+                  if (didUpdate == true && mounted) {
+                    final refreshed = await notifier.getGameById(
+                      _currentGame.bggId,
+                    );
+                    if (refreshed != null && mounted) {
+                      setState(() {
+                        _currentGame = refreshed;
+                        _isFavorite = refreshed.isFavorite;
+                        _isOwned = refreshed.isOwned;
+                        _didUpdate = true;
+                      });
+                      await playSessionNotifier.loadSessionsForGame(
+                        _currentGame.bggId,
+                      );
+                    }
+                  }
+                },
+              )
+            : null,
       ),
     );
   }
