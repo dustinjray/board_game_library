@@ -3,11 +3,17 @@ import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 
 class BoardGameService {
-  final baseUrl = "https://bg-library-api-630738732167.us-east1.run.app";
+  final String baseUrl;
+  final http.Client _client;
+
+  BoardGameService({
+    http.Client? client,
+    this.baseUrl = "https://bg-library-api-630738732167.us-east1.run.app",
+  }) : _client = client ?? http.Client();
 
   Future<BoardGame> fetchBoardGameDetails(int id) async {
     final url = Uri.parse('$baseUrl/boardgame/$id');
-    final response = await http.get(url);
+    final response = await _client.get(url);
 
     if (response.statusCode != 200) {
       throw Exception(

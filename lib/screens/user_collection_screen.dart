@@ -182,9 +182,9 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
   }
 
   Future<void> _openBoardGameScreen(BoardGame game) async {
-    final gameWithDetails = await context.read<GamesNotifier>().getGameById(
-      game.bggId,
-    );
+    final gameWithDetails = await context
+        .read<GamesNotifier>()
+        .ensureGameDetailsLoaded(game.bggId);
     if (gameWithDetails == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

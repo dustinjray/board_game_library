@@ -54,6 +54,10 @@ class GamesNotifier extends ChangeNotifier {
     return await _repo.getGameById(id);
   }
 
+  Future<BoardGame?> ensureGameDetailsLoaded(int id) async {
+    return await _repo.ensureGameDetailsLoaded(id);
+  }
+
   Future<void> addGameToCollection(BoardGame game) async {
     await _repo.addGameToCollection(game);
 

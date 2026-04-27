@@ -170,22 +170,39 @@ class SqlGamesRepository implements GamesRepository {
   @override
   Future<BoardGame?> getGameById(int id) async {
     // Loads the game with all its relations (categories/mechanics/expansions).
+    return _getGameWithRelationsById(id);
+  }
+
+  @override
+  Future<BoardGame?> ensureGameDetailsLoaded(int id) async {
+    final existingGame = await _gamesDAO.getBoardGameById(id);
+    if (existingGame == null) {
+      return null;
+    }
+
+    if (!existingGame.detailsFetched) {
+      try {
+        final fetchedGame = await _service.fetchBoardGameDetails(id);
+        final gameToSave = fetchedGame.copyWith(
+          isFavorite: existingGame.isFavorite,
+          isOwned: existingGame.isOwned,
+          timesPlayed: existingGame.timesPlayed,
+        );
+        await updateGameWithRelations(gameToSave);
+      } catch (e) {
+        print('Error fetching details for game with id $id: $e');
+      }
+    }
+
+    return _getGameWithRelationsById(id);
+  }
+
+  Future<BoardGame?> _getGameWithRelationsById(int id) async {
     final game = await _gamesDAO.getBoardGameById(id);
     if (game == null) {
       return null;
     }
-    if (!game.detailsFetched) {
-      // If the game details have not been fetched before, fetch them from the BGG API and update the database before returning the game.
-      try {
-        final fetchedGame = await _service.fetchBoardGameDetails(id);
-        await updateGameWithRelations(fetchedGame);
-        return fetchedGame;
-      } catch (e) {
-        print('Error fetching details for game with id $id: $e');
-        // If fetching details fails for any reason, return the game without details rather than throwing an error.
-        return game;
-      }
-    }
+
     final categories = await _categoriesDAO.getCategoriesForGame(id);
     final mechanics = await _mechanicsDAO.getMechanicsForGame(id);
     final expansions = await _expansionsDAO.getExpansionsForGame(id);
