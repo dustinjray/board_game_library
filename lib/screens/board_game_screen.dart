@@ -1,6 +1,7 @@
 import 'package:board_game_library/screens/edit_game_screen.dart';
 import 'package:board_game_library/state/games_notifier.dart';
 import 'package:board_game_library/state/play_session_notifier.dart';
+import 'package:board_game_library/widgets/bgg_link_button.dart';
 import 'package:board_game_library/widgets/game_item_expansion_tile.dart';
 import 'package:board_game_library/widgets/game_summary_card.dart';
 import 'package:board_game_library/widgets/play_session_section.dart';
@@ -96,6 +97,9 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
           leading: BackButton(
             onPressed: () => Navigator.of(context).pop(_didUpdate),
           ),
+          actions: const [
+            BggLinkButton(),
+          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

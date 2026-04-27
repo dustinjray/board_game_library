@@ -1,3 +1,4 @@
+import 'package:board_game_library/enums/game_sort_option.dart';
 import 'package:board_game_library/models/board_game_category.dart';
 import 'package:board_game_library/models/board_game_mechanic.dart';
 
@@ -13,6 +14,7 @@ class BoardGameCriteria {
   final bool? isExpansion;
   final bool? isUnplayed;
   final bool? isOwned;
+  final GameSortOption sortOption;
 
   const BoardGameCriteria({
     this.minPlayers,
@@ -26,6 +28,37 @@ class BoardGameCriteria {
     this.isExpansion,
     this.isUnplayed,
     this.isOwned,
+    this.sortOption = GameSortOption.nameAsc,
   });
+
+  BoardGameCriteria copyWith({
+    int? minPlayers,
+    int? maxPlayers,
+    int? maxPlaytime,
+    int? age,
+    String? nameLike,
+    List<BoardGameCategory>? categories,
+    List<BoardGameMechanic>? mechanics,
+    bool? isFavorite,
+    bool? isExpansion,
+    bool? isUnplayed,
+    bool? isOwned,
+    GameSortOption? sortOption,
+  }) {
+    return BoardGameCriteria(
+      minPlayers: minPlayers ?? this.minPlayers,
+      maxPlayers: maxPlayers ?? this.maxPlayers,
+      maxPlaytime: maxPlaytime ?? this.maxPlaytime,
+      age: age ?? this.age,
+      nameLike: nameLike ?? this.nameLike,
+      categories: categories ?? this.categories,
+      mechanics: mechanics ?? this.mechanics,
+      isFavorite: isFavorite ?? this.isFavorite,
+      isExpansion: isExpansion ?? this.isExpansion,
+      isUnplayed: isUnplayed ?? this.isUnplayed,
+      isOwned: isOwned ?? this.isOwned,
+      sortOption: sortOption ?? this.sortOption,
+    );
+  }
   
 }

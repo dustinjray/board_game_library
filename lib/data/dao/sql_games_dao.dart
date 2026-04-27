@@ -1,5 +1,6 @@
 import 'package:board_game_library/data/dao/games_dao.dart';
 import 'package:board_game_library/data/local/database_helper.dart';
+import 'package:board_game_library/enums/game_sort_option.dart';
 import 'package:board_game_library/models/board_game.dart';
 import 'package:board_game_library/models/board_game_criteria.dart';
 import 'package:sqflite/sqflite.dart';
@@ -325,9 +326,19 @@ class SqlGamesDAO extends GamesDAO {
       SELECT bgg_id, name, min_players, max_players, min_playtime,
       max_playtime, is_favorite, is_owned, is_expansion, details_fetched
       FROM board_games
-      WHERE is_owned = 1
     ''';
     final args = <dynamic>[];
+
+    if (effectiveCriteria.sortOption == GameSortOption.datePlayedAsc ||
+      effectiveCriteria.sortOption == GameSortOption.datePlayedDesc) {
+      sql += ' INNER JOIN (SELECT board_game_id, MAX(date_played) AS last_played FROM play_sessions GROUP BY board_game_id) ps ON board_games.bgg_id = ps.board_game_id';
+    } else if (effectiveCriteria.sortOption == GameSortOption.mostPlayed ||
+        effectiveCriteria.sortOption == GameSortOption.leastPlayed) {
+      sql +=
+          ' INNER JOIN (SELECT board_game_id, COUNT(*) AS play_count FROM play_sessions GROUP BY board_game_id) ps ON board_games.bgg_id = ps.board_game_id';
+    }
+
+    sql += ' WHERE 1=1 AND is_owned = 1';
 
     if (trimmedPrefix != null && trimmedPrefix.isNotEmpty) {
       sql += ' AND name LIKE ? COLLATE NOCASE';
@@ -394,7 +405,8 @@ class SqlGamesDAO extends GamesDAO {
       args.addAll(mechanicIds);
     }
 
-    sql += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+    final orderByClause = _buildOrderByClause(effectiveCriteria);
+    sql += ' ORDER BY $orderByClause LIMIT ? OFFSET ?';
     args.add(pageSize);
     args.add(offset);
 
@@ -403,5 +415,30 @@ class SqlGamesDAO extends GamesDAO {
     return List.generate(maps.length, (i) {
       return BoardGame.fromMap(maps[i]);
     });
+  }
+
+  String _buildOrderByClause(BoardGameCriteria criteria) {
+    switch (criteria.sortOption) {
+      case GameSortOption.nameAsc:
+        return 'board_games.name ASC';
+      case GameSortOption.nameDesc:
+        return 'board_games.name DESC';
+      case GameSortOption.datePlayedAsc:
+        return 'datetime(ps.last_played) ASC, board_games.name ASC';
+      case GameSortOption.datePlayedDesc:
+        return 'datetime(ps.last_played) DESC, board_games.name ASC';
+      case GameSortOption.leastPlayed:
+        return 'ps.play_count ASC, board_games.name ASC';
+      case GameSortOption.mostPlayed:
+        return 'ps.play_count DESC, board_games.name ASC';
+      case GameSortOption.mostPlayers:
+        return 'board_games.max_players DESC, board_games.name ASC';
+      case GameSortOption.leastPlayers:
+        return 'board_games.min_players ASC, board_games.name ASC';
+      case GameSortOption.longestPlaytime:
+        return 'board_games.max_playtime DESC, board_games.name ASC';
+      case GameSortOption.shortestPlaytime:
+        return 'board_games.min_playtime ASC, board_games.name ASC';
+    }
   }
 }

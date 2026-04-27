@@ -1,10 +1,12 @@
  import 'dart:async';
 
+import 'package:board_game_library/enums/game_sort_option.dart';
 import 'package:board_game_library/models/board_game.dart';
 import 'package:board_game_library/models/board_game_criteria.dart';
 import 'package:board_game_library/screens/add_to_collection_screen.dart';
 import 'package:board_game_library/screens/board_game_screen.dart';
 import 'package:board_game_library/state/games_notifier.dart';
+import 'package:board_game_library/widgets/bgg_link_button.dart';
 import 'package:board_game_library/widgets/board_game_filter.dart';
 import 'package:board_game_library/widgets/board_game_tile.dart';
 import 'package:flutter/material.dart';
@@ -91,6 +93,16 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
       });
       _resetAndReload();
     });
+  }
+
+  void _onSortOptionSelected(GameSortOption option) {
+    if (option == _activeCriteria.sortOption) return;
+
+    setState(() {
+      _activeCriteria = _activeCriteria.copyWith(sortOption: option);
+      _queryVersion++;
+    });
+    _resetAndReload();
   }
 
   Future<void> _resetAndReload() async {
@@ -232,6 +244,9 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
             ],
           ],
         ),
+        actions: [
+          const BggLinkButton(),
+        ],
       ),
       drawer: BoardGameFilter(
         initialCriteria: _activeCriteria,
@@ -242,7 +257,7 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
         children: [
           Container(
             color: Theme.of(context).scaffoldBackgroundColor,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: TextField(
               controller: _searchController,
               decoration: const InputDecoration(
@@ -250,6 +265,41 @@ class _UserCollectionScreenState extends State<UserCollectionScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
+          ),
+          Container(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                PopupMenuButton<GameSortOption>(
+                  tooltip: 'Sort games',
+                  icon: const Icon(Icons.sort),
+                  initialValue: _activeCriteria.sortOption,
+                  onSelected: _onSortOptionSelected,
+                  itemBuilder: (context) => GameSortOption.values
+                      .map(
+                        (option) => PopupMenuItem<GameSortOption>(
+                          value: option,
+                          child: Row(
+                            children: [
+                              Expanded(child: Text(option.label)),
+                              if (option == _activeCriteria.sortOption)
+                                const Icon(Icons.check, size: 16),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _activeCriteria.sortOption.label,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                )
+              ]
+            )
           ),
           Expanded(
             child: _visibleGames.isEmpty && !_isLoading
