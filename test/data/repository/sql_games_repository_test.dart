@@ -1,6 +1,14 @@
 import 'dart:io';
 
 import 'package:board_game_library/config/database_factory_init.dart';
+import 'package:board_game_library/data/dao/categories_dao.dart';
+import 'package:board_game_library/data/dao/expansions_dao.dart';
+import 'package:board_game_library/data/dao/games_dao.dart';
+import 'package:board_game_library/data/dao/mechanics_dao.dart';
+import 'package:board_game_library/data/dao/sql_categories_dao.dart';
+import 'package:board_game_library/data/dao/sql_expansions_dao.dart';
+import 'package:board_game_library/data/dao/sql_games_dao.dart';
+import 'package:board_game_library/data/dao/sql_mechanics_dao.dart';
 import 'package:board_game_library/data/local/database_helper.dart';
 import 'package:board_game_library/data/repository/sql_games_repository.dart';
 import 'package:board_game_library/models/board_game.dart';
@@ -8,14 +16,17 @@ import 'package:board_game_library/models/board_game_category.dart';
 import 'package:board_game_library/models/board_game_criteria.dart';
 import 'package:board_game_library/models/board_game_expansion.dart';
 import 'package:board_game_library/models/board_game_mechanic.dart';
+import 'package:board_game_library/services/board_game_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:xml/xml.dart' as xml;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late DatabaseHelper helper;
   late SqlGamesRepository repository;
+  late BoardGameService service;
   late Directory tempDbDir;
   late String testDbPath;
   late String seededDbPath;
@@ -53,7 +64,20 @@ void main() {
     await File(seededDbPath).copy(testDbPath);
     DatabaseHelper.setDatabasePathOverrideForTesting(testDbPath);
 
-    repository = SqlGamesRepository(helper);
+    final GamesDAO gamesDAO = SqlGamesDAO(helper);
+    final CategoriesDAO categoriesDAO = SqlCategoriesDAO(helper);
+    final MechanicsDAO mechanicsDAO = SqlMechanicsDAO(helper);
+    final ExpansionsDAO expansionsDAO = SqlExpansionsDAO(helper);
+    service = _FakeBoardGameService();
+
+    repository = SqlGamesRepository(
+      helper,
+      gamesDAO,
+      categoriesDAO,
+      mechanicsDAO,
+      expansionsDAO,
+      service,
+    );
   });
 
   tearDownAll(() async {
@@ -108,22 +132,53 @@ void main() {
     test('getGameById() gets a game by its ID', () async {
       final expected = BoardGame(bggId: 295895, name: 'Distilled', yearPublished: 2023, isExpansion: false);
       final actual = await repository.getGameById(295895);
-      expect(actual.bggId, expected.bggId);
-      expect(actual.name, expected.name);
-      expect(actual.yearPublished, expected.yearPublished);
-      expect(actual.isExpansion, expected.isExpansion);
-      expect(actual.categories.length, 1);
-      expect(actual.categories.first.id, 1002);
-      expect(actual.mechanics.length, 1);
-      expect(actual.mechanics.first.id, 2002);
-      expect(actual.expansions, isEmpty);
+      expect(actual, isNotNull);
+      final actualGame = actual!;
+      expect(actualGame.bggId, expected.bggId);
+      expect(actualGame.name, expected.name);
+      expect(actualGame.yearPublished, expected.yearPublished);
+      expect(actualGame.isExpansion, expected.isExpansion);
+      expect(actualGame.categories.length, 1);
+      expect(actualGame.categories.first.id, 1002);
+      expect(actualGame.mechanics.length, 1);
+      expect(actualGame.mechanics.first.id, 2002);
+      expect(actualGame.expansions, isEmpty);
     });
+
+    test(
+      'ensureGameDetailsLoaded() fetches missing details and preserves local flags',
+      () async {
+        final gameWithoutDetails = BoardGame(
+          bggId: 999100,
+          name: 'Needs Details',
+          isFavorite: true,
+          isOwned: true,
+          timesPlayed: 7,
+          detailsFetched: false,
+        );
+
+        await repository.insertGame(gameWithoutDetails);
+
+        final hydrated = await repository.ensureGameDetailsLoaded(
+          gameWithoutDetails.bggId,
+        );
+
+        expect(hydrated, isNotNull);
+        expect(hydrated!.detailsFetched, isTrue);
+        expect(hydrated.isFavorite, isTrue);
+        expect(hydrated.isOwned, isTrue);
+        expect(hydrated.timesPlayed, 7);
+        expect(hydrated.categories, isNotEmpty);
+        expect(hydrated.mechanics, isNotEmpty);
+      },
+    );
 
     test('insertGame() successfully inserts a board game', () async {
       final expectedGame = _sampleGame();
       await repository.insertGame(expectedGame);
       final actualGame = await repository.getGameById(expectedGame.bggId);
-      expect(actualGame.bggId, expectedGame.bggId);
+      expect(actualGame, isNotNull);
+      expect(actualGame!.bggId, expectedGame.bggId);
       expect(actualGame.name, expectedGame.name);
     });
 
@@ -138,7 +193,7 @@ void main() {
 
       await repository.insertGameWithRelations(expected);
 
-      final actual = await helper.getBoardGameWithRelationsById(expected.bggId);
+      final actual = await repository.getGameById(expected.bggId);
       expect(actual, isNotNull);
       final actualGame = actual!;
       expect(actualGame.bggId, expected.bggId);
@@ -167,7 +222,8 @@ void main() {
       await repository.updateGame(updated);
 
       final actual = await repository.getGameById(updated.bggId);
-      expect(actual.name, 'After Update');
+      expect(actual, isNotNull);
+      expect(actual!.name, 'After Update');
       expect(actual.yearPublished, 2024);
       expect(actual.minPlayers, 2);
       expect(actual.maxPlayers, 5);
@@ -193,7 +249,7 @@ void main() {
 
       await repository.updateGameWithRelations(updated);
 
-      final actual = await helper.getBoardGameWithRelationsById(updated.bggId);
+      final actual = await repository.getGameById(updated.bggId);
       expect(actual, isNotNull);
       final actualGame = actual!;
       expect(actualGame.name, 'After Relation Update');
@@ -209,13 +265,12 @@ void main() {
       final gameToDelete = _sampleGame(bggId: 999999, name: 'Game To Delete');
       await repository.insertGame(gameToDelete);
       final inserted = await repository.getGameById(gameToDelete.bggId);
-      expect(inserted.bggId, gameToDelete.bggId);
+      expect(inserted, isNotNull);
+      expect(inserted!.bggId, gameToDelete.bggId);
 
       await repository.deleteGame(gameToDelete);
-      expect(
-        () => repository.getGameById(gameToDelete.bggId),
-        throwsA(isA<Exception>()),
-      );
+      final deleted = await repository.getGameById(gameToDelete.bggId);
+      expect(deleted, isNull);
     });
 
     test('searchByCriteria() finds games with specific criteria', () async {
@@ -404,4 +459,20 @@ List<BoardGame> _getExpectedGamesFromSeed() {
       timesPlayed: 1,
     ),
   ];
+}
+
+class _FakeBoardGameService extends BoardGameService {
+  @override
+  Future<BoardGame> fetchBoardGameDetails(int id) async {
+    final xmlString = await File('lib/resources/BoardGameResponse.xml')
+        .readAsString();
+    final document = xml.XmlDocument.parse(xmlString);
+    final boardGameElement = document
+        .getElement('boardgames')
+        ?.getElement('boardgame');
+    if (boardGameElement == null) {
+      throw StateError('Board game fixture is missing a boardgame element.');
+    }
+    return BoardGame.fromXmlElement(boardGameElement).copyWith(bggId: id);
+  }
 }

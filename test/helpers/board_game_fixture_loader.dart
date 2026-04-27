@@ -7,5 +7,5 @@ Future<BoardGame> loadBoardGameFromFixture(String fixturePath) async {
   final xmlString = await File(fixturePath).readAsString();
   final xmlDoc = xml.XmlDocument.parse(xmlString);
   final boardgameElement = xmlDoc.findAllElements('boardgame').first;
-  return BoardGame.fromXML(boardgameElement.toXmlString());
+  return BoardGame.fromXmlElement(boardgameElement);
 }

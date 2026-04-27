@@ -1,10 +1,20 @@
 import 'dart:io';
 
 import 'package:board_game_library/config/database_factory_init.dart';
+import 'package:board_game_library/data/dao/categories_dao.dart';
+import 'package:board_game_library/data/dao/expansions_dao.dart';
+import 'package:board_game_library/data/dao/games_dao.dart';
+import 'package:board_game_library/data/dao/mechanics_dao.dart';
+import 'package:board_game_library/data/dao/sql_categories_dao.dart';
+import 'package:board_game_library/data/dao/sql_expansions_dao.dart';
+import 'package:board_game_library/data/dao/sql_games_dao.dart';
+import 'package:board_game_library/data/dao/sql_mechanics_dao.dart';
 import 'package:board_game_library/data/local/database_helper.dart';
+import 'package:board_game_library/data/repository/sql_games_repository.dart';
 import 'package:board_game_library/models/board_game_category.dart';
 import 'package:board_game_library/models/board_game_expansion.dart';
 import 'package:board_game_library/models/board_game_mechanic.dart';
+import 'package:board_game_library/services/board_game_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import '../../helpers/board_game_fixture_loader.dart';
@@ -13,6 +23,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late DatabaseHelper helper;
+  late SqlGamesRepository repository;
   late Directory tempDbDir;
   late String testDbPath;
 
@@ -30,6 +41,20 @@ void main() {
     if (await dbFile.exists()) {
       await dbFile.delete();
     }
+
+    final GamesDAO gamesDAO = SqlGamesDAO(helper);
+    final CategoriesDAO categoriesDAO = SqlCategoriesDAO(helper);
+    final MechanicsDAO mechanicsDAO = SqlMechanicsDAO(helper);
+    final ExpansionsDAO expansionsDAO = SqlExpansionsDAO(helper);
+
+    repository = SqlGamesRepository(
+      helper,
+      gamesDAO,
+      categoriesDAO,
+      mechanicsDAO,
+      expansionsDAO,
+      _NoopBoardGameService(),
+    );
   });
 
   tearDownAll(() async {
@@ -45,9 +70,9 @@ void main() {
 
     expect(gameFromXml.bggId, 295895);
 
-    await helper.insertBoardGameWithRelations(gameFromXml);
+    await repository.insertGameWithRelations(gameFromXml);
 
-    final inserted = await helper.getBoardGameWithRelationsById(295895);
+    final inserted = await repository.getGameById(295895);
     expect(inserted, isNotNull);
     expect(inserted!.categories, isNotEmpty);
 
@@ -60,9 +85,9 @@ void main() {
       categories: [...gameFromXml.categories, addedCategory],
     );
 
-    await helper.updateBoardGameWithRelations(withAddedCategory);
+    await repository.updateGameWithRelations(withAddedCategory);
 
-    final afterAdd = await helper.getBoardGameWithRelationsById(295895);
+    final afterAdd = await repository.getGameById(295895);
     expect(afterAdd, isNotNull);
     expect(afterAdd!.name, '${gameFromXml.name} (Updated)');
     expect(afterAdd.categories.any((c) => c.id == testCategoryId), isTrue);
@@ -71,15 +96,15 @@ void main() {
       categories: gameFromXml.categories,
     );
 
-    await helper.updateBoardGameWithRelations(withRemovedCategory);
+    await repository.updateGameWithRelations(withRemovedCategory);
 
-    final afterRemove = await helper.getBoardGameWithRelationsById(295895);
+    final afterRemove = await repository.getGameById(295895);
     expect(afterRemove, isNotNull);
     expect(afterRemove!.categories.any((c) => c.id == testCategoryId), isFalse);
 
-    await helper.deleteBoardGame(295895);
+    await repository.deleteGame(withRemovedCategory);
 
-    final deletedGame = await helper.getBoardGameById(295895);
+    final deletedGame = await repository.getGameById(295895);
     expect(deletedGame, isNull);
 
     final db = await helper.database;
@@ -108,7 +133,7 @@ void main() {
     expect(gameFromXml.mechanics, isNotEmpty);
     expect(gameFromXml.expansions, isNotEmpty);
 
-    await helper.insertBoardGameWithRelations(gameFromXml);
+    await repository.insertGameWithRelations(gameFromXml);
 
     final removedOriginalMechanicId = gameFromXml.mechanics.first.id;
     final removedOriginalExpansionId = gameFromXml.expansions.first.id;
@@ -124,9 +149,9 @@ void main() {
       expansions: [...gameFromXml.expansions.skip(1), addedExpansion],
     );
 
-    await helper.updateBoardGameWithRelations(updatedGame);
+    await repository.updateGameWithRelations(updatedGame);
 
-    final afterFirstUpdate = await helper.getBoardGameWithRelationsById(295895);
+    final afterFirstUpdate = await repository.getGameById(295895);
     expect(afterFirstUpdate, isNotNull);
     expect(afterFirstUpdate!.mechanics.any((mechanic) => mechanic.id == addedMechanicId), isTrue);
     expect(afterFirstUpdate.mechanics.any((mechanic) => mechanic.id == removedOriginalMechanicId), isFalse);
@@ -138,9 +163,9 @@ void main() {
       expansions: gameFromXml.expansions,
     );
 
-    await helper.updateBoardGameWithRelations(restoredGame);
+    await repository.updateGameWithRelations(restoredGame);
 
-    final afterSecondUpdate = await helper.getBoardGameWithRelationsById(295895);
+    final afterSecondUpdate = await repository.getGameById(295895);
     expect(afterSecondUpdate, isNotNull);
     expect(afterSecondUpdate!.mechanics.any((mechanic) => mechanic.id == addedMechanicId), isFalse);
     expect(afterSecondUpdate.mechanics.any((mechanic) => mechanic.id == removedOriginalMechanicId), isTrue);
@@ -148,3 +173,5 @@ void main() {
     expect(afterSecondUpdate.expansions.any((expansion) => expansion.id == removedOriginalExpansionId), isTrue);
   });
 }
+
+class _NoopBoardGameService extends BoardGameService {}
